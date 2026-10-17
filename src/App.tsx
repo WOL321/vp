@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './data/botCode';
 
+const VOTE_GOAL = 250;
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -139,39 +141,39 @@ function Features() {
   const features = [
     {
       icon: RefreshCw,
-      title: 'Auto-Scraping',
+      title: 'Robust Auto-Scraping',
       description:
-        'Scrapes vote counts from minecraft-mp.com, minecraftservers.org, and minecraft-server-list.com every 3 minutes.',
+        'Scrapes "Vote(s)" from Minecraft-MP, "Votes" from MinecraftServers.org, and monthly/all-time votes from Minecraft-Server-List. Uses multiple selector strategies + regex fallbacks.',
     },
     {
       icon: Target,
       title: 'Smart Cycle Detection',
       description:
-        'Automatically detects when 250 votes are reached and resets for the next vote party cycle.',
+        'Automatically detects when 250 votes are reached and resets for the next vote party cycle. No manual intervention needed.',
     },
     {
       icon: Bell,
       title: 'Role Notifications',
       description:
-        'Pings the VP role when remaining votes drop to 30 or below. Members toggle notifications with a button.',
+        'Pings the VP role when remaining votes drop to 30 or below (once per cycle). Members toggle notifications with a single button click.',
     },
     {
       icon: Shield,
       title: 'Admin Controls',
       description:
-        'Full slash command suite for admins: setup tracker, set remaining votes, reset baseline, force updates.',
+        'Full slash command suite: setup tracker, set remaining votes, reset baseline, force updates. All Administrator-only.',
     },
     {
       icon: Zap,
-      title: 'Persistent Embed',
+      title: 'Persistent Single Embed',
       description:
-        'Edits a single message in-place — never spams the channel. Survives bot restarts via JSON persistence.',
+        'Edits one message in-place — never spams the channel. Survives bot restarts via JSON persistence. Professional and clean.',
     },
     {
       icon: Users,
-      title: 'Progress Visualization',
+      title: 'Dynamic Color-Coded Embed',
       description:
-        'Beautiful dark embed with progress bar, percentage, individual site counts, and clickable vote links.',
+        'Premium embed with accent bar that changes color: green (>50 remaining), yellow (≤50), red (≤30). Progress bar, site counts, and vote links.',
     },
   ];
 
@@ -443,6 +445,20 @@ python bot.py`}
 }
 
 function EmbedPreview() {
+  const [previewState, setPreviewState] = useState<'green' | 'yellow' | 'red'>('yellow');
+
+  const states = {
+    green: { remaining: 120, color: '#2ECC71', label: 'Green (> 50 remaining)' },
+    yellow: { remaining: 47, color: '#F1C40F', label: 'Yellow (≤ 50 remaining)' },
+    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30 remaining)' },
+  };
+
+  const current = states[previewState];
+  const progress = VOTE_GOAL - current.remaining;
+  const percentage = (progress / VOTE_GOAL) * 100;
+  const filled = Math.round(percentage / 5);
+  const empty = 20 - filled;
+
   return (
     <section className="max-w-6xl mx-auto px-6 py-20">
       <motion.div
@@ -452,75 +468,103 @@ function EmbedPreview() {
         className="text-center mb-14"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          Embed Preview
+          Premium Embed Preview
         </h2>
-        <p className="text-gray-400 max-w-2xl mx-auto">
-          Here's what the tracker embed looks like in Discord.
+        <p className="text-gray-400 max-w-2xl mx-auto mb-8">
+          The embed features a dynamic color-coded accent bar that changes based on remaining votes.
         </p>
+
+        {/* State selector */}
+        <div className="flex flex-wrap justify-center gap-3">
+          {Object.entries(states).map(([key, state]) => (
+            <button
+              key={key}
+              onClick={() => setPreviewState(key as 'green' | 'yellow' | 'red')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                previewState === key
+                  ? 'bg-[#5865F2] text-white'
+                  : 'bg-[#2b2d31] text-gray-400 hover:text-white border border-[#3f4147]'
+              }`}
+            >
+              <span
+                className="inline-block w-3 h-3 rounded-full mr-2"
+                style={{ backgroundColor: state.color }}
+              />
+              {state.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       <div className="max-w-lg mx-auto">
-        <div className="bg-[#2b2d31] rounded-lg border border-[#3f4147] overflow-hidden">
+        <div className="bg-[#2b2d31] rounded-lg border border-[#3f4147] overflow-hidden shadow-2xl">
           {/* Discord embed mock */}
           <div className="p-4">
             <div className="flex">
-              <div className="w-1 rounded-l bg-[#00FF00] shrink-0" />
-              <div className="bg-[#1e1f22] rounded-r-lg p-4 flex-1">
-                <h3 className="text-white font-bold text-base mb-2">
+              <div
+                className="w-1 rounded-l shrink-0 transition-colors duration-500"
+                style={{ backgroundColor: current.color }}
+              />
+              <div className="bg-[#1e1f22] rounded-r-lg p-5 flex-1">
+                <h3 className="text-white font-bold text-lg mb-3">
                   🇨🇴 Colombia Vote Party Tracker
                 </h3>
-                <p className="text-gray-300 text-sm mb-4">
-                  <strong className="text-white">47</strong> votes remaining to reach{' '}
-                  <strong className="text-white">250</strong>!
-                </p>
+
+                {/* Big clear text */}
+                <div className="mb-4">
+                  <p className="text-2xl font-bold text-white mb-2">
+                    {current.remaining} votes remaining to reach 250!
+                  </p>
+                  <div className="font-mono text-sm text-gray-300">
+                    <span style={{ color: current.color }}>
+                      {'▰'.repeat(filled)}
+                    </span>
+                    <span className="text-gray-600">
+                      {'▱'.repeat(empty)}
+                    </span>{' '}
+                    <strong className="text-white">{percentage.toFixed(1)}%</strong>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-1">
+                    <strong className="text-white">{progress}</strong> / 250 votes collected
+                  </p>
+                </div>
 
                 <div className="mb-4">
-                  <div className="text-xs text-gray-400 font-semibold uppercase mb-1">
-                    📊 Progress
+                  <div className="text-xs text-gray-400 font-semibold uppercase mb-2">
+                    🗳️ Vote Counts
                   </div>
-                  <div className="text-sm text-gray-300 font-mono">
-                    <span className="text-green-400">████████████████████</span>
-                    <span className="text-gray-600">░░░░</span>{' '}
-                    <strong className="text-white">81.2%</strong> (203/250)
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <div>• <strong>Minecraft-MP</strong> — 89 votes</div>
+                    <div>• <strong>MinecraftServers.org</strong> — 67 votes</div>
+                    <div>• <strong>Minecraft-Server-List</strong> — 47 votes</div>
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <div className="text-xs text-gray-400 font-semibold uppercase mb-1">
-                    🗳️ Vote Sites
+                  <div className="text-xs text-gray-400 font-semibold uppercase mb-2">
+                    🔗 Vote Now
                   </div>
-                  <div className="text-sm text-gray-300 space-y-0.5">
-                    <div>• <strong>Minecraft-MP</strong>: 89 votes</div>
-                    <div>• <strong>MinecraftServers.org</strong>: 67 votes</div>
-                    <div>• <strong>Minecraft-Server-List</strong>: 47 votes</div>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="text-xs text-gray-400 font-semibold uppercase mb-1">
-                    🔗 Vote Now!
-                  </div>
-                  <div className="text-sm space-y-0.5">
+                  <div className="text-sm space-y-1">
                     <div>
                       <a href="#" className="text-[#00A8FC] hover:underline">
-                        Minecraft-MP
+                        • Vote on Minecraft-MP
                       </a>
                     </div>
                     <div>
                       <a href="#" className="text-[#00A8FC] hover:underline">
-                        MinecraftServers.org
+                        • Vote on MinecraftServers.org
                       </a>
                     </div>
                     <div>
                       <a href="#" className="text-[#00A8FC] hover:underline">
-                        Minecraft-Server-List
+                        • Vote on Minecraft-Server-List
                       </a>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500">
-                  Last updated: 2026-01-15 14:32:00 UTC
+                <div className="text-xs text-gray-500 pt-3 border-t border-[#2b2d31]">
+                  ⏱️ Last updated: 2026-01-15 14:32:00 UTC
                 </div>
               </div>
             </div>
