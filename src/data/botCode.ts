@@ -4,17 +4,14 @@ Colombia Vote Party Tracker - Discord Bot
 Production-ready Discord bot for tracking vote party progress
 on the Colombia nation (DiplomaticaMC).
 
-Scrapes vote counts from 3 Minecraft server list sites every 3 minutes,
-tracks progress toward a 250-vote goal, and notifies members when
-the party is close.
-
 Features:
-- Auto-scraping with fallback selectors
-- Dynamic color-coded embed (green/yellow/red)
-- Persistent single-message editing
-- Automatic cycle detection and reset
-- Role-based notification system
+- Premium embed design with dynamic color coding
+- Auto-scraping every 3 minutes from 3 vote sites
+- Persistent single-message editing (never spams)
+- Automatic cycle detection and reset at 250 votes
+- Role-based notification system with persistent button
 - Full admin slash command suite
+- Robust error handling and fallback selectors
 
 Author: Colombia Nation Admin Team
 License: MIT
@@ -42,12 +39,11 @@ PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
 # Color thresholds for embed accent bar
-COLOR_GREEN = 0x2ECC71   # Remaining > 50
-COLOR_YELLOW = 0xF1C40F  # Remaining <= 50
-COLOR_RED = 0xE74C3C     # Remaining <= 30
+COLOR_YELLOW = 0xF1C40F  # Remaining > 50 (Early stage)
+COLOR_BLUE = 0x3498DB    # Remaining 31-50 (Mid stage)
+COLOR_RED = 0xE74C3C     # Remaining <= 30 (Final push)
 
 # ─── Vote Site Definitions ────────────────────────────────────────────────────
-# Each site has primary and fallback selectors for robust scraping
 
 VOTE_SITES = [
     {
@@ -55,14 +51,13 @@ VOTE_SITES = [
         "url": "https://minecraft-mp.com/server-s349345",
         "description": "Main vote count from server page",
         "primary_selectors": [
-            # Look for the "Vote(s)" badge/counter
             "span.badge.bg-success",
             "div.card-body span.badge",
             "span.votes",
             "div.votes span",
         ],
         "fallback_patterns": [
-            r"(\\d+)\\s*vote",  # "X votes" or "X vote"
+            r"(\\d+)\\s*vote",
             r"Votes?:\\s*(\\d+)",
         ],
     },
@@ -71,15 +66,14 @@ VOTE_SITES = [
         "url": "https://minecraftservers.org/server/679302",
         "description": "Vote count from server listing",
         "primary_selectors": [
-            # Look for the "Votes" number
             "div.votes-count span",
             "span.votes",
             "div.server-info .votes",
             "span[class*='vote']",
         ],
         "fallback_patterns": [
-            r"(\d+)\s*votes?",
-            r"Votes?:\s*(\d+)",
+            r"(\\d+)\\s*votes?",
+            r"Votes?:\\s*(\\d+)",
         ],
     },
     {
@@ -87,16 +81,15 @@ VOTE_SITES = [
         "url": "https://minecraft-server-list.com/server/513054/vote/",
         "description": "Monthly/all-time vote count",
         "primary_selectors": [
-            # Look for monthly or all-time votes
             "span.vote-count",
             "div.vote-stats span",
             "span[class*='monthly']",
             "div.monthly-votes span",
         ],
         "fallback_patterns": [
-            r"(\d+)\s*votes?\s*(this\s*month|monthly)",
-            r"Monthly:\s*(\d+)",
-            r"(\d+)\s*votes?",
+            r"(\\d+)\\s*votes?\\s*(this\\s*month|monthly)",
+            r"Monthly:\\s*(\\d+)",
+            r"(\\d+)\\s*votes?",
         ],
     },
 ]
@@ -151,7 +144,7 @@ class BotData:
         except IOError as e:
             logger.error(f"Failed to save data file: {e}")
 
-    # Property accessors for clean API
+    # Property accessors
     @property
     def message_id(self) -> Optional[int]:
         return self.data.get("message_id")
@@ -225,7 +218,7 @@ class VoteScraper:
         """Initialize the HTTP session with proper headers."""
         self.session = aiohttp.ClientSession(
             headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.5",
             }
@@ -240,7 +233,6 @@ class VoteScraper:
         """
         Scrape a single site for its vote count.
         Tries primary selectors first, then regex fallbacks.
-        Returns (site_name, vote_count) or (site_name, None) on failure.
         """
         name = site["name"]
         try:
@@ -262,7 +254,7 @@ class VoteScraper:
                         text = element.get_text(strip=True)
                         count = self._extract_number(text)
                         if count is not None and count > 0:
-                            logger.info(f"{name}: Found {count} votes (selector: {selector})")
+                            logger.info(f"{name}: Found {count} votes")
                             return name, count
 
                 # Strategy 2: Try regex patterns on full HTML
@@ -271,14 +263,8 @@ class VoteScraper:
                     if match:
                         count = int(match.group(1))
                         if count > 0:
-                            logger.info(f"{name}: Found {count} votes (regex: {pattern})")
+                            logger.info(f"{name}: Found {count} votes (regex)")
                             return name, count
-
-                # Strategy 3: Try extracting from all span/div elements
-                count = self._brute_force_extract(soup)
-                if count is not None:
-                    logger.info(f"{name}: Found {count} votes (brute force)")
-                    return name, count
 
                 logger.warning(f"{name}: Could not find vote count")
                 return name, None
@@ -291,34 +277,16 @@ class VoteScraper:
             return name, None
 
     def _extract_number(self, text: str) -> Optional[int]:
-        """Extract an integer from text, handling various formats."""
-        # Remove commas and whitespace, find first number sequence
+        """Extract an integer from text."""
         cleaned = re.sub(r"[^\\d]", "", text.replace(",", ""))
         if cleaned:
             return int(cleaned)
-        return None
-
-    def _brute_force_extract(self, soup: BeautifulSoup) -> Optional[int]:
-        """Last resort: search all elements for vote-related numbers."""
-        vote_keywords = ["vote", "votes", "votos"]
-
-        for element in soup.find_all(["span", "div", "p", "strong", "b"]):
-            text = element.get_text(strip=True).lower()
-            if any(keyword in text for keyword in vote_keywords):
-                # Try to extract number from this element
-                numbers = re.findall(r"\\d+", text)
-                for num_str in numbers:
-                    num = int(num_str)
-                    # Filter out obviously wrong numbers (like years)
-                    if 10 < num < 100000:
-                        return num
         return None
 
     async def scrape_all(self) -> tuple[dict[str, Optional[int]], int]:
         """
         Scrape all configured sites concurrently.
         Returns (site_counts_dict, total_sum).
-        Only counts sites that returned valid data.
         """
         if not self.session:
             await self.start()
@@ -342,29 +310,62 @@ class VoteScraper:
 
 class EmbedBuilder:
     """
-    Builds the premium vote party tracker embed with dynamic styling.
-    Color changes based on remaining votes:
-    - Green: remaining > 50
-    - Yellow: remaining <= 50
-    - Red: remaining <= 30
+    Builds a premium, modern vote party tracker embed with dynamic styling.
+    Designed for visual impact and professional appearance.
+    
+    Color scheme:
+    - Yellow: remaining > 50 (Early stage)
+    - Blue: remaining 31-50 (Mid stage)
+    - Red: remaining <= 30 (Final push)
     """
 
     @staticmethod
     def get_color(remaining: int) -> int:
-        """Determine embed color based on remaining votes."""
+        """
+        Determine embed accent color based on remaining votes.
+        Creates visual urgency as the party approaches completion.
+        """
         if remaining <= PING_THRESHOLD:
             return COLOR_RED
         elif remaining <= 50:
-            return COLOR_YELLOW
+            return COLOR_BLUE
         else:
-            return COLOR_GREEN
+            return COLOR_YELLOW
+
+    @staticmethod
+    def get_status_line(remaining: int) -> str:
+        """
+        Get a dynamic status message based on remaining votes.
+        Creates engagement and urgency through progressive messaging.
+        """
+        if remaining <= 0:
+            return "🎉 **Vote Party Complete!**"
+        elif remaining <= 30:
+            return "🔥 **Final push! Almost there!**"
+        elif remaining <= 50:
+            return "⚡ **Getting close! Keep voting!**"
+        elif remaining <= 100:
+            return "💪 **Good progress! Don't stop!**"
+        else:
+            return "✅ **All good! Let's get started!**"
 
     @staticmethod
     def build_progress_bar(percentage: float, length: int = 20) -> str:
-        """Build a visual progress bar with filled and empty blocks."""
+        """
+        Build a visually appealing progress bar.
+        Uses Unicode block characters for a clean, modern look.
+        """
         filled = int(percentage / (100 / length))
         empty = length - filled
         return "▰" * filled + "▱" * empty
+
+    @staticmethod
+    def format_site_count(name: str, count: Optional[int]) -> str:
+        """Format individual site vote count with visual indicator."""
+        if count is not None:
+            return f"▸ **{name}** — {count} votes"
+        else:
+            return f"▸ **{name}** — ⚠️ Unavailable"
 
     @staticmethod
     def build(
@@ -372,60 +373,72 @@ class EmbedBuilder:
         site_counts: dict[str, Optional[int]],
         last_updated: Optional[str],
     ) -> discord.Embed:
-        """Build the premium vote party tracker embed."""
+        """
+        Build a premium vote party tracker embed with modern design.
+        Features strong visual hierarchy, clean spacing, and dynamic elements.
+        """
         progress = max(0, VOTE_GOAL - remaining)
         percentage = min(100, max(0, (progress / VOTE_GOAL) * 100))
         color = EmbedBuilder.get_color(remaining)
 
-        # Build progress bar
+        # Build visual elements
         bar = EmbedBuilder.build_progress_bar(percentage)
+        status_line = EmbedBuilder.get_status_line(remaining)
 
-        # Create embed with dynamic color
+        # Create embed with dynamic accent color
         embed = discord.Embed(
             title="🇨🇴 Colombia Vote Party Tracker",
             color=color,
             timestamp=datetime.now(timezone.utc),
         )
 
-        # Main description - big clear text
+        # Main content area - large, bold, clear
         if remaining <= 0:
-            embed.description = f"🎉 **Vote Party Complete!** Starting new cycle..."
+            embed.description = (
+                f"# 🎉 **Vote Party Complete!**\\n"
+                f"Starting new cycle...\\n\\n"
+                f"{bar} **100.0%**"
+            )
         else:
             embed.description = (
-                f"## **{remaining}** votes remaining to reach **{VOTE_GOAL}!**\\n"
-                f"\\n"
-                f"\`{bar}\` **{percentage:.1f}%**\\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected"
+                f"# **{remaining}** votes remaining\\n"
+                f"to reach **{VOTE_GOAL}!**\\n\\n"
+                f"{bar} **{percentage:.1f}%**\\n"
+                f"**{progress}** / {VOTE_GOAL} votes collected\\n\\n"
+                f"{status_line}"
             )
 
-        # Individual site counts - clean formatting
+        # Divider for visual separation
+        embed.add_field(name="\\u200b", value="\\u200b", inline=False)
+
+        # Individual site votes - clean, organized format
         site_lines = []
         for site in VOTE_SITES:
             name = site["name"]
             count = site_counts.get(name)
-            if count is not None:
-                site_lines.append(f"\\u2022 **{name}** \\u2014 {count} votes")
-            else:
-                site_lines.append(f"\\u2022 **{name}** \\u2014 ⚠️ Unavailable")
+            site_lines.append(EmbedBuilder.format_site_count(name, count))
 
         embed.add_field(
-            name="🗳️ Vote Counts",
+            name="🗳️ **Vote Counts**",
             value="\\n".join(site_lines) if site_lines else "No data yet",
             inline=False,
         )
 
-        # Vote links - clickable
+        # Another divider
+        embed.add_field(name="\\u200b", value="\\u200b", inline=False)
+
+        # Vote links - clean, clickable
         links = []
         for site in VOTE_SITES:
-            links.append(f"\\u2022 [Vote on {site['name']}]({site['url']})")
+            links.append(f"▸ [Vote on {site['name']}]({site['url']})")
 
         embed.add_field(
-            name="🔗 Vote Now",
+            name="🔗 **Vote Now**",
             value="\\n".join(links),
             inline=False,
         )
 
-        # Footer with last updated time
+        # Footer with timestamp
         if last_updated:
             embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         else:
@@ -483,7 +496,7 @@ class VoteNotifyView(discord.ui.View):
         except discord.Forbidden:
             await interaction.response.send_message(
                 "❌ I don't have permission to manage roles. "
-                "Please ensure my role is **above** the VP role in the hierarchy.",
+                "Please ensure my role is **above** the VP role.",
                 ephemeral=True,
             )
         except discord.HTTPException as e:
@@ -504,7 +517,7 @@ class VotePartyBot(commands.Bot):
         intents.members = True
 
         super().__init__(
-            command_prefix="!",  # Fallback only, we use slash commands
+            command_prefix="!",
             intents=intents,
             help_command=None,
         )
@@ -575,9 +588,7 @@ class VotePartyBot(commands.Bot):
 
             # Check if vote party is complete
             if remaining <= 0:
-                logger.info(
-                    f"🎉 Vote party complete! Total: {total}, Baseline: {baseline}"
-                )
+                logger.info(f"🎉 Vote party complete! Total: {total}")
                 # Reset for next cycle
                 baseline = total
                 remaining = VOTE_GOAL
@@ -635,8 +646,7 @@ class VotePartyBot(commands.Bot):
                     try:
                         await self.tracker_message.channel.send(
                             f"🚨 **{vp_role.mention}** Only **{remaining}** votes left "
-                            f"until the Vote Party! Vote now to help us reach the goal!\\n"
-                            f"\\n"
+                            f"until the Vote Party! Vote now!\\n"
                             f"🔗 https://minecraft-mp.com/server-s349345",
                             allowed_mentions=discord.AllowedMentions(roles=True),
                         )
@@ -683,7 +693,6 @@ class VotePartyCog(commands.Cog):
         # Check if we already have a message
         if self.bot.tracker_message:
             try:
-                # Update existing message
                 embed = EmbedBuilder.build(
                     remaining=self.bot.bot_data.remaining,
                     site_counts=self.bot.bot_data.site_counts,
@@ -696,7 +705,6 @@ class VotePartyCog(commands.Cog):
                 )
                 return
             except discord.NotFound:
-                # Message was deleted, create new one
                 self.bot.tracker_message = None
 
         # Create new message
@@ -716,8 +724,7 @@ class VotePartyCog(commands.Cog):
         self.bot.bot_data.save()
 
         await interaction.followup.send(
-            f"✅ Vote Party tracker posted in {channel.mention}!\\n"
-            f"Message ID: {message.id}",
+            f"✅ Vote Party tracker posted in {channel.mention}!",
             ephemeral=True,
         )
 
@@ -739,7 +746,7 @@ class VotePartyCog(commands.Cog):
             return
 
         self.bot.bot_data.remaining = value
-        self.bot.bot_data.has_ping_sent = False  # Reset ping status
+        self.bot.bot_data.has_ping_sent = False
         self.bot.bot_data.save()
 
         await self.bot._update_embed()
@@ -775,15 +782,9 @@ class VotePartyCog(commands.Cog):
 
             await self.bot._update_embed()
 
-            site_summary = ", ".join(
-                f"{k}: {v if v is not None else 'N/A'}"
-                for k, v in counts.items()
-            )
-
             await interaction.followup.send(
                 f"✅ New baseline set to **{total}**.\\n"
-                f"Vote party reset! {VOTE_GOAL} votes to go.\\n\\n"
-                f"**Site counts:**\\n{site_summary}",
+                f"Vote party reset! {VOTE_GOAL} votes to go.",
                 ephemeral=True,
             )
         except Exception as e:
@@ -803,15 +804,9 @@ class VotePartyCog(commands.Cog):
         try:
             await self.bot._perform_scrape_and_update()
 
-            site_summary = ", ".join(
-                f"{k}: {v if v is not None else 'N/A'}"
-                for k, v in self.bot.bot_data.site_counts.items()
-            )
-
             await interaction.followup.send(
-                f"✅ Update complete!\\n\\n"
-                f"**Remaining:** {self.bot.bot_data.remaining} votes\\n"
-                f"**Site counts:**\\n{site_summary}",
+                f"✅ Update complete!\\n"
+                f"Remaining: {self.bot.bot_data.remaining} votes",
                 ephemeral=True,
             )
         except Exception as e:
@@ -853,14 +848,14 @@ def main():
         return
 
     bot = VotePartyBot()
-    bot.run(token, log_handler=None)  # We handle logging ourselves
+    bot.run(token, log_handler=None)
 
 
 if __name__ == "__main__":
     main()
 `;
 
-export const requirementsTxt = `discord.py>=2.3.0
+export const requirementsTxt = `discord.py>=2.4.0
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
 `;
@@ -874,89 +869,57 @@ export const setupInstructions = `# Colombia Vote Party Bot - Setup Guide
 
 ## Prerequisites
 - Python 3.10 or higher
-- A Discord account with Administrator permissions
-- A Discord Bot Application
+- Discord account with Administrator permissions
+- Discord Bot Application
 
 ## Step 1: Create a Discord Bot
 
 1. Go to https://discord.com/developers/applications
-2. Click "New Application" → name it (e.g., "Colombia Vote Party")
-3. Go to "Bot" tab → Click "Add Bot" → "Yes, do it"
-4. Under "Privileged Gateway Intents", enable:
+2. Click "New Application" → name it
+3. Go to "Bot" tab → Click "Add Bot"
+4. Enable intents:
    - ✅ Server Members Intent
    - ✅ Message Content Intent
-5. Copy the **Bot Token** (keep this secret!)
+5. Copy the **Bot Token**
 
-## Step 2: Invite the Bot to Your Server
+## Step 2: Invite the Bot
 
 1. Go to "OAuth2" → "URL Generator"
-2. Select scopes:
-   - ✅ bot
-   - ✅ applications.commands
-3. Select Bot Permissions:
-   - ✅ Send Messages
-   - ✅ Embed Links
-   - ✅ Manage Messages
-   - ✅ Manage Roles
-   - ✅ Read Message History
-   - ✅ Use External Emojis
-4. Copy the generated URL → open in browser → select your server
+2. Select scopes: bot, applications.commands
+3. Select permissions:
+   - Send Messages, Embed Links, Manage Messages
+   - Manage Roles, Read Message History
+4. Copy URL → open in browser → select server
 
 ## Step 3: Create the VP Role
 
 1. Server Settings → Roles → Create Role
 2. Name it exactly: **VP**
-3. **Important**: Bot's role must be ABOVE VP in hierarchy
+3. Bot's role must be ABOVE VP in hierarchy
 
 ## Step 4: Install and Run
 
 \`\`\`bash
-# Clone or download the bot files
 cd colombia-vote-party-bot
-
-# Create virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate  # Windows: venv\\Scripts\\activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Set your bot token
 export DISCORD_BOT_TOKEN='your_token_here'
-# Windows: set DISCORD_BOT_TOKEN=your_token_here
-
-# Run the bot
 python bot.py
 \`\`\`
 
-## Step 5: Initialize the Tracker
+## Step 5: Initialize
 
-1. Go to the channel where you want the tracker
+1. Go to desired channel
 2. Run: \`/voteparty setup\`
-3. The tracker embed will appear with the 🔔 button
+3. Tracker embed appears with 🔔 button
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| \`/voteparty setup\` | Post/update tracker embed |
-| \`/voteparty setremaining <number>\` | Set remaining votes |
-| \`/voteparty setbaseline\` | Reset baseline to current total |
-| \`/voteparty forceupdate\` | Force immediate scrape |
-
-## How It Works
-
-1. Every 3 minutes, scrapes all 3 vote sites
-2. Sums the totals and compares to baseline
-3. Remaining = 250 - (current_sum - baseline)
-4. When remaining ≤ 0, auto-resets for new cycle
-5. When remaining ≤ 30, pings VP role (once per cycle)
-6. Members toggle VP role with 🔔 button
-
-## Troubleshooting
-
-- **"VP role not found"**: Create role named exactly "VP"
-- **Site counts unavailable**: Site may be down or HTML changed
-- **Can't manage roles**: Bot role must be above VP role
-- **Commands not showing**: Wait for Discord to sync (up to 1 hour)
+| \`/voteparty setup\` | Post/update tracker |
+| \`/voteparty setremaining <n>\` | Set remaining votes |
+| \`/voteparty setbaseline\` | Reset baseline |
+| \`/voteparty forceupdate\` | Force scrape |
 `;
