@@ -42,9 +42,9 @@ PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
 # Color thresholds for embed accent bar
-COLOR_GREEN = 0x2ECC71   # Remaining > 50
-COLOR_YELLOW = 0xF1C40F  # Remaining <= 50
-COLOR_RED = 0xE74C3C     # Remaining <= 30
+COLOR_YELLOW = 0xF1C40F  # Remaining > 50 (Yellow)
+COLOR_BLUE = 0x3498DB    # Remaining 31-50 (Blue)
+COLOR_RED = 0xE74C3C     # Remaining <= 30 (Red)
 
 # ─── Vote Site Definitions ────────────────────────────────────────────────────
 # Each site has primary and fallback selectors for robust scraping
@@ -351,13 +351,35 @@ class EmbedBuilder:
 
     @staticmethod
     def get_color(remaining: int) -> int:
-        """Determine embed color based on remaining votes."""
+        """
+        Determine embed color based on remaining votes.
+        - Yellow: remaining > 50
+        - Blue: remaining 31-50
+        - Red: remaining <= 30
+        """
         if remaining <= PING_THRESHOLD:
             return COLOR_RED
         elif remaining <= 50:
-            return COLOR_YELLOW
+            return COLOR_BLUE
         else:
-            return COLOR_GREEN
+            return COLOR_YELLOW
+
+    @staticmethod
+    def get_status_line(remaining: int) -> str:
+        """
+        Get a dynamic status message based on remaining votes.
+        Changes to create urgency as the party approaches completion.
+        """
+        if remaining <= 0:
+            return "🎉 Vote Party Complete!"
+        elif remaining <= 30:
+            return "🔥 Final push! Almost there!"
+        elif remaining <= 50:
+            return "⚡ Getting close! Keep voting!"
+        elif remaining <= 100:
+            return "💪 Good progress! Don't stop!"
+        else:
+            return "✅ All good! Let's get started!"
 
     @staticmethod
     def build_progress_bar(percentage: float, length: int = 20) -> str:
@@ -380,6 +402,9 @@ class EmbedBuilder:
         # Build progress bar
         bar = EmbedBuilder.build_progress_bar(percentage)
 
+        # Get dynamic status line
+        status_line = EmbedBuilder.get_status_line(remaining)
+
         # Create embed with dynamic color
         embed = discord.Embed(
             title="🇨🇴 Colombia Vote Party Tracker",
@@ -387,15 +412,22 @@ class EmbedBuilder:
             timestamp=datetime.now(timezone.utc),
         )
 
-        # Main description - big clear text
+        # Main description - big clear text with status
         if remaining <= 0:
-            embed.description = f"🎉 **Vote Party Complete!** Starting new cycle..."
+            embed.description = (
+                f"## 🎉 **Vote Party Complete!**\\n"
+                f"Starting new cycle...\\n"
+                f"\\n"
+                f"\`{bar}\` **100.0%**"
+            )
         else:
             embed.description = (
                 f"## **{remaining}** votes remaining to reach **{VOTE_GOAL}!**\\n"
                 f"\\n"
                 f"\`{bar}\` **{percentage:.1f}%**\\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected"
+                f"**{progress}** / {VOTE_GOAL} votes collected\\n"
+                f"\\n"
+                f"**{status_line}**"
             )
 
         # Individual site counts - clean formatting

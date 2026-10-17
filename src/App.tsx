@@ -173,7 +173,7 @@ function Features() {
       icon: Users,
       title: 'Dynamic Color-Coded Embed',
       description:
-        'Premium embed with accent bar that changes color: green (>50 remaining), yellow (≤50), red (≤30). Progress bar, site counts, and vote links.',
+        'Premium embed with accent bar that changes color: yellow (>50 remaining), blue (31-50), red (≤30). Includes dynamic status messages and progress visualization.',
     },
   ];
 
@@ -445,12 +445,12 @@ python bot.py`}
 }
 
 function EmbedPreview() {
-  const [previewState, setPreviewState] = useState<'green' | 'yellow' | 'red'>('yellow');
+  const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('blue');
 
   const states = {
-    green: { remaining: 120, color: '#2ECC71', label: 'Green (> 50 remaining)' },
-    yellow: { remaining: 47, color: '#F1C40F', label: 'Yellow (≤ 50 remaining)' },
-    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30 remaining)' },
+    yellow: { remaining: 120, color: '#F1C40F', label: 'Yellow (> 50 remaining)', status: '✅ All good! Let\'s get started!' },
+    blue: { remaining: 47, color: '#3498DB', label: 'Blue (31-50 remaining)', status: '⚡ Getting close! Keep voting!' },
+    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30 remaining)', status: '🔥 Final push! Almost there!' },
   };
 
   const current = states[previewState];
@@ -471,7 +471,7 @@ function EmbedPreview() {
           Premium Embed Preview
         </h2>
         <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-          The embed features a dynamic color-coded accent bar that changes based on remaining votes.
+          The embed features a dynamic color-coded accent bar (yellow/blue/red) and status messages that change based on remaining votes.
         </p>
 
         {/* State selector */}
@@ -479,7 +479,7 @@ function EmbedPreview() {
           {Object.entries(states).map(([key, state]) => (
             <button
               key={key}
-              onClick={() => setPreviewState(key as 'green' | 'yellow' | 'red')}
+              onClick={() => setPreviewState(key as 'yellow' | 'blue' | 'red')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 previewState === key
                   ? 'bg-[#5865F2] text-white'
@@ -526,6 +526,9 @@ function EmbedPreview() {
                   </div>
                   <p className="text-sm text-gray-400 mt-1">
                     <strong className="text-white">{progress}</strong> / 250 votes collected
+                  </p>
+                  <p className="text-sm font-semibold mt-3" style={{ color: current.color }}>
+                    {current.status}
                   </p>
                 </div>
 
