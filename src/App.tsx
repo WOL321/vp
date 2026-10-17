@@ -448,9 +448,9 @@ function EmbedPreview() {
   const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('blue');
 
   const states = {
-    yellow: { remaining: 120, color: '#F1C40F', label: 'Yellow (> 50 remaining)', status: '✅ All good! Let\'s get started!' },
-    blue: { remaining: 47, color: '#3498DB', label: 'Blue (31-50 remaining)', status: '⚡ Getting close! Keep voting!' },
-    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30 remaining)', status: '🔥 Final push! Almost there!' },
+    yellow: { remaining: 120, color: '#F1C40F', label: 'Yellow (> 50)', status: '✅ All good! Let\'s get started!' },
+    blue: { remaining: 47, color: '#3498DB', label: 'Blue (31-50)', status: '⚡ Getting close! Keep voting!' },
+    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30)', status: '🔥 Final push! Almost there!' },
   };
 
   const current = states[previewState];
@@ -468,10 +468,10 @@ function EmbedPreview() {
         className="text-center mb-14"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          Premium Embed Preview
+          Premium Embed Design
         </h2>
         <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-          The embed features a dynamic color-coded accent bar (yellow/blue/red) and status messages that change based on remaining votes.
+          Modern, polished embed with dynamic color coding and status messages. Click to preview different stages.
         </p>
 
         {/* State selector */}
@@ -480,10 +480,10 @@ function EmbedPreview() {
             <button
               key={key}
               onClick={() => setPreviewState(key as 'yellow' | 'blue' | 'red')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 previewState === key
-                  ? 'bg-[#5865F2] text-white'
-                  : 'bg-[#2b2d31] text-gray-400 hover:text-white border border-[#3f4147]'
+                  ? 'bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/20'
+                  : 'bg-[#2b2d31] text-gray-400 hover:text-white border border-[#3f4147] hover:border-[#5865F2]/50'
               }`}
             >
               <span
@@ -496,91 +496,132 @@ function EmbedPreview() {
         </div>
       </motion.div>
 
-      <div className="max-w-lg mx-auto">
-        <div className="bg-[#2b2d31] rounded-lg border border-[#3f4147] overflow-hidden shadow-2xl">
+      <motion.div
+        key={previewState}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-2xl mx-auto"
+      >
+        <div className="bg-[#2b2d31] rounded-xl border border-[#3f4147] overflow-hidden shadow-2xl">
           {/* Discord embed mock */}
-          <div className="p-4">
+          <div className="p-5">
             <div className="flex">
               <div
-                className="w-1 rounded-l shrink-0 transition-colors duration-500"
+                className="w-1.5 rounded-l shrink-0 transition-colors duration-500"
                 style={{ backgroundColor: current.color }}
               />
-              <div className="bg-[#1e1f22] rounded-r-lg p-5 flex-1">
-                <h3 className="text-white font-bold text-lg mb-3">
+              <div className="bg-[#1e1f22] rounded-r-xl p-6 flex-1">
+                <h3 className="text-white font-bold text-xl mb-4">
                   🇨🇴 Colombia Vote Party Tracker
                 </h3>
 
-                {/* Big clear text */}
-                <div className="mb-4">
-                  <p className="text-2xl font-bold text-white mb-2">
-                    {current.remaining} votes remaining to reach 250!
+                {/* Big clear text with hierarchy */}
+                <div className="mb-5">
+                  <p className="text-3xl font-bold text-white mb-3 leading-tight">
+                    {current.remaining} votes remaining
                   </p>
-                  <div className="font-mono text-sm text-gray-300">
+                  <p className="text-lg text-gray-300 mb-4">
+                    to reach <strong className="text-white">250!</strong>
+                  </p>
+                  
+                  {/* Progress bar */}
+                  <div className="font-mono text-base mb-2">
                     <span style={{ color: current.color }}>
                       {'▰'.repeat(filled)}
                     </span>
                     <span className="text-gray-600">
                       {'▱'.repeat(empty)}
                     </span>{' '}
-                    <strong className="text-white">{percentage.toFixed(1)}%</strong>
+                    <strong className="text-white text-lg">{percentage.toFixed(1)}%</strong>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
-                    <strong className="text-white">{progress}</strong> / 250 votes collected
+                  
+                  <p className="text-sm text-gray-400">
+                    <strong className="text-white text-base">{progress}</strong> / 250 votes collected
                   </p>
-                  <p className="text-sm font-semibold mt-3" style={{ color: current.color }}>
+                  
+                  {/* Status message */}
+                  <p className="text-base font-bold mt-4" style={{ color: current.color }}>
                     {current.status}
                   </p>
                 </div>
 
-                <div className="mb-4">
-                  <div className="text-xs text-gray-400 font-semibold uppercase mb-2">
+                {/* Divider */}
+                <div className="border-t border-[#2b2d31] my-5" />
+
+                {/* Vote counts */}
+                <div className="mb-5">
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-wide mb-3">
                     🗳️ Vote Counts
                   </div>
-                  <div className="text-sm text-gray-300 space-y-1">
-                    <div>• <strong>Minecraft-MP</strong> — 89 votes</div>
-                    <div>• <strong>MinecraftServers.org</strong> — 67 votes</div>
-                    <div>• <strong>Minecraft-Server-List</strong> — 47 votes</div>
+                  <div className="text-sm text-gray-300 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <strong className="text-white">Minecraft-MP</strong>
+                      <span className="text-gray-500">—</span>
+                      <span>89 votes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <strong className="text-white">MinecraftServers.org</strong>
+                      <span className="text-gray-500">—</span>
+                      <span>67 votes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <strong className="text-white">Minecraft-Server-List</strong>
+                      <span className="text-gray-500">—</span>
+                      <span>47 votes</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mb-4">
-                  <div className="text-xs text-gray-400 font-semibold uppercase mb-2">
+                {/* Divider */}
+                <div className="border-t border-[#2b2d31] my-5" />
+
+                {/* Vote links */}
+                <div className="mb-5">
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-wide mb-3">
                     🔗 Vote Now
                   </div>
-                  <div className="text-sm space-y-1">
-                    <div>
-                      <a href="#" className="text-[#00A8FC] hover:underline">
-                        • Vote on Minecraft-MP
+                  <div className="text-sm space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <a href="#" className="text-[#00A8FC] hover:underline font-medium">
+                        Vote on Minecraft-MP
                       </a>
                     </div>
-                    <div>
-                      <a href="#" className="text-[#00A8FC] hover:underline">
-                        • Vote on MinecraftServers.org
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <a href="#" className="text-[#00A8FC] hover:underline font-medium">
+                        Vote on MinecraftServers.org
                       </a>
                     </div>
-                    <div>
-                      <a href="#" className="text-[#00A8FC] hover:underline">
-                        • Vote on Minecraft-Server-List
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: current.color }}>▸</span>
+                      <a href="#" className="text-[#00A8FC] hover:underline font-medium">
+                        Vote on Minecraft-Server-List
                       </a>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500 pt-3 border-t border-[#2b2d31]">
+                {/* Footer */}
+                <div className="text-xs text-gray-500 pt-4 border-t border-[#2b2d31]">
                   ⏱️ Last updated: 2026-01-15 14:32:00 UTC
                 </div>
               </div>
             </div>
 
             {/* Button */}
-            <div className="mt-3 ml-1">
-              <button className="px-4 py-2 rounded-md bg-[#5865F2] text-white text-sm font-medium hover:bg-[#4752C4] transition-colors">
+            <div className="mt-4 ml-1.5">
+              <button className="px-5 py-2.5 rounded-lg bg-[#5865F2] text-white text-sm font-semibold hover:bg-[#4752C4] transition-colors shadow-lg shadow-[#5865F2]/20">
                 🔔 Get Notified
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
