@@ -62,7 +62,7 @@ VOTE_SITES = [
         "url": "https://minecraft-mp.com/server-s349345",
         "description": "Main vote count from server page",
         "primary_selectors": [
-            "table.table-bordered tr:nth-of-type(2) td:last-child",
+            "table.table-bordered",  # Get the whole table, then parse
         ],
         "fallback_patterns": [
             r"Vote\(s\)</strong></td>\s*<td>(\d+)",
@@ -72,7 +72,9 @@ VOTE_SITES = [
         "name": "MinecraftServers.org",
         "url": "https://minecraftservers.org/server/679302",
         "description": "Vote count from server listing",
-        "primary_selectors": [],
+        "primary_selectors": [
+            "div.server-info",  # Get the server info div
+        ],
         "fallback_patterns": [
             r">Votes</div>\s*<div[^>]*>(\d+)</div>",
         ],
@@ -82,10 +84,11 @@ VOTE_SITES = [
         "url": "https://minecraft-server-list.com/server/513054/vote/",
         "description": "Monthly vote count",
         "primary_selectors": [
-            "td.sm-wide",
+            "table#votifier_table",
         ],
         "fallback_patterns": [
             r"(\d+) Players have voted for this server in",
+            r"<b>(\d+) Votes - All time</b>",
         ],
     },
 ]
@@ -260,17 +263,39 @@ class VoteScraper:
                 html = await resp.text()
                 soup = BeautifulSoup(html, "html.parser")
 
-                # Strategy 1: Try primary CSS selectors
-                for selector in site["primary_selectors"]:
-                    element = soup.select_one(selector)
-                    if element:
-                        text = element.get_text(strip=True)
-                        count = self._extract_number(text)
-                        if count is not None and count > 0:
-                            logger.info(f"{name}: Found {count} votes")
-                            return name, count
+                # Site-specific parsing
+                if name == "Minecraft-MP":
+                    # Find the table row containing "Vote(s)"
+                    for row in soup.select("table.table-bordered tr"):
+                        if "Vote(s)" in row.get_text():
+                            cells = row.find_all("td")
+                            if len(cells) >= 2:
+                                count = self._extract_number(cells[1].get_text())
+                                if count:
+                                    logger.info(f"{name}: Found {count} votes")
+                                    return name, count
+                
+                elif name == "MinecraftServers.org":
+                    # Find the div containing "Votes" label
+                    for row in soup.select("div.server-info div.row"):
+                        if "Votes" in row.get_text():
+                            cells = row.find_all("div")
+                            if len(cells) >= 2:
+                                count = self._extract_number(cells[1].get_text())
+                                if count:
+                                    logger.info(f"{name}: Found {count} votes")
+                                    return name, count
+                
+                elif name == "Minecraft-Server-List":
+                    # Look for monthly votes text
+                    text = soup.get_text()
+                    match = re.search(r"(\d+) Players have voted for this server in", text)
+                    if match:
+                        count = int(match.group(1))
+                        logger.info(f"{name}: Found {count} votes (monthly)")
+                        return name, count
 
-                # Strategy 2: Try regex patterns on full HTML
+                # Fallback: Try regex patterns on full HTML
                 for pattern in site["fallback_patterns"]:
                     match = re.search(pattern, html, re.IGNORECASE)
                     if match:
