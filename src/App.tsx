@@ -341,13 +341,13 @@ function Features() {
 // ─── Live Tracker Demo ───────────────────────────────────────────────────────
 
 function LiveTracker() {
-  const [votes, setVotes] = useState(187);
+  const [votes, setVotes] = useState(103);
   const [elapsed, setElapsed] = useState(0);
   const [lastUpdate, setLastUpdate] = useState(0);
   const [siteVotes, setSiteVotes] = useState([
-    { name: 'Minecraft-Server-List', votes: 4491, online: true },
-    { name: 'TopG.org', votes: 1203, online: true },
-    { name: 'MinecraftServers.org', votes: 0, online: false },
+    { name: 'Minecraft-MP', votes: 4441, dot: '🟡' },
+    { name: 'MinecraftServers.org', votes: 4745, dot: '🔷' },
+    { name: 'Minecraft-Server-List', votes: 4495, dot: '🔴' },
   ]);
 
   useEffect(() => {
@@ -365,10 +365,8 @@ function LiveTracker() {
         const change = Math.random() > 0.5 ? 1 : 0;
         return Math.min(VOTE_GOAL, prev + change);
       });
-      // Simulate site vote count changes
       setSiteVotes((prev) =>
         prev.map((site) => {
-          if (!site.online) return site;
           const delta = Math.floor(Math.random() * 5) - 1;
           return { ...site, votes: Math.max(0, site.votes + delta) };
         })
@@ -379,22 +377,19 @@ function LiveTracker() {
 
   const remaining = VOTE_GOAL - votes;
   const progress = (votes / VOTE_GOAL) * 100;
-  
-  const getBarColor = () => {
-    if (remaining <= 10) return 'from-red-500 to-rose-500';
-    if (remaining <= 30) return 'from-orange-500 to-amber-500';
-    if (remaining <= 100) return 'from-yellow-500 to-amber-400';
-    return 'from-blue-500 to-cyan-400';
+  const filledBlocks = Math.round((progress / 100) * 10);
+  const emptyBlocks = 10 - filledBlocks;
+  const progressBar = '🟨'.repeat(filledBlocks) + '⬜'.repeat(emptyBlocks);
+
+  const getMotivational = () => {
+    if (remaining <= 10) return '🔥 Almost there! Party imminent!';
+    if (remaining <= 30) return '⚡ Getting close! Notify the server!';
+    if (remaining <= 100) return '💪 Good progress! Keep it up!';
+    return '🗳️ Vote party in progress';
   };
 
-  const getStatus = () => {
-    if (remaining <= 10) return { text: 'Almost there! Party imminent!', color: 'text-red-400' };
-    if (remaining <= 30) return { text: 'Getting close! Notify the server!', color: 'text-orange-400' };
-    if (remaining <= 100) return { text: 'Good progress, keep voting!', color: 'text-yellow-400' };
-    return { text: 'Vote party in progress', color: 'text-blue-400' };
-  };
-
-  const status = getStatus();
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   return (
     <section id="tracker" className="relative py-32">
@@ -435,83 +430,82 @@ function LiveTracker() {
                   <span className="text-sm font-semibold text-white">VoteParty Bot</span>
                   <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#5865f2] text-white font-medium">BOT</span>
                 </div>
-                <span className="text-xs text-gray-500">Today at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-xs text-gray-500">Today at {timeStr}</span>
               </div>
             </div>
 
             {/* Embed content */}
             <div className="mx-4 mb-4 rounded-lg overflow-hidden bg-[#1e1f22] border-l-4 border-yellow-400">
-              <div className="p-4">
-                {/* Embed title */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Vote size={16} className="text-yellow-400" />
-                  <span className="text-sm font-bold text-white">Colombia Vote Party Tracker</span>
+              <div className="p-4 font-mono text-[13px] leading-[1.8]">
+                {/* Title */}
+                <div className="text-white font-bold text-sm mb-1">
+                  🇨🇴 Colombia Vote Party
+                </div>
+
+                {/* Remaining */}
+                <div className="text-gray-300 mb-1">
+                  <span className="font-semibold text-white">{remaining}</span> votes remaining
                 </div>
 
                 {/* Progress bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs text-gray-400">Progress</span>
-                    <span className="text-xs font-mono text-gray-300">{votes}/{VOTE_GOAL}</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-[#2b2d31] overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full bg-gradient-to-r ${getBarColor()}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                    />
-                  </div>
+                <div className="text-[12px] tracking-wider mb-0.5">
+                  {progressBar} <span className="text-gray-400">{progress.toFixed(1)}%</span>
                 </div>
 
-                {/* Vote Sites Breakdown */}
-                <div className="space-y-1.5 mb-3">
+                {/* Votes collected */}
+                <div className="text-gray-400 text-[12px] mb-2">
+                  {votes} / {VOTE_GOAL} votes collected
+                </div>
+
+                {/* Motivational */}
+                <div className="text-gray-300 text-[12px] mb-3">
+                  {getMotivational()}
+                </div>
+
+                {/* Divider */}
+                <div className="text-gray-600 text-[12px] mb-2 select-none">
+                  ━━━━━━━━━━━━━━━━━━━━
+                </div>
+
+                {/* Vote Counts header */}
+                <div className="text-gray-300 text-[12px] mb-1.5">
+                  🗳️ Vote Counts
+                </div>
+
+                {/* Site votes */}
+                <div className="space-y-0.5 mb-2">
                   {siteVotes.map((site) => (
-                    <div
-                      key={site.name}
-                      className="flex items-center justify-between bg-[#2b2d31] rounded-lg px-3 py-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            site.online ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]' : 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]'
-                          }`}
-                        />
-                        <span className="text-xs text-gray-300 font-medium">{site.name}</span>
-                      </div>
-                      <span className={`text-xs font-mono font-semibold ${site.online ? 'text-white' : 'text-gray-600 line-through'}`}>
-                        {site.online ? site.votes.toLocaleString() : 'Offline'}
-                      </span>
+                    <div key={site.name} className="text-[12px]">
+                      <span>{site.dot}</span>{' '}
+                      <span className="text-gray-300">{site.name}</span>{' '}
+                      <span className="text-gray-500">—</span>{' '}
+                      <span className="text-white font-semibold">{site.votes.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Summary stats */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
-                    <div className="text-sm font-bold text-white">{votes}</div>
-                    <div className="text-[10px] text-gray-500">Votes</div>
-                  </div>
-                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
-                    <div className="text-sm font-bold text-white">{remaining}</div>
-                    <div className="text-[10px] text-gray-500">Remaining</div>
-                  </div>
-                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
-                    <div className="text-sm font-bold text-white">{Math.round(progress)}%</div>
-                    <div className="text-[10px] text-gray-500">Complete</div>
-                  </div>
+                {/* Vote Now header */}
+                <div className="text-yellow-400 text-[12px] font-semibold mb-1">
+                  🔗 Vote Now!
                 </div>
 
-                {/* Status */}
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${status.color}`}>{status.text}</span>
-                  <span className="text-[10px] text-gray-600">{formatRelativeTime(lastUpdate)}</span>
+                {/* Vote links */}
+                <div className="space-y-0.5 mb-3">
+                  {siteVotes.map((site, i) => (
+                    <div key={site.name} className="text-[12px] text-[#00aff4] hover:underline cursor-pointer">
+                      {i + 1}. Vote on {site.name}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Next update */}
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] text-gray-600">
-                  <RefreshCw size={10} />
-                  <span>Next update in {formatCountdown(elapsed)}</span>
+                {/* Divider */}
+                <div className="text-gray-600 text-[12px] mb-1 select-none">
+                  ━━━━━━━━━━━━━━━━
+                </div>
+
+                {/* Footer */}
+                <div className="text-gray-500 text-[11px]">
+                  Updates every 15s • Today at {timeStr}
                 </div>
               </div>
             </div>
