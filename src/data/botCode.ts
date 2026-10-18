@@ -46,7 +46,7 @@ PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
 # Premium embed assets
-BANNER_URL = "https://image.qwenlm.ai/generated-images/a878ae01-bfa5-48ff-9074-517456b9dfb2/_result.png"
+BANNER_URL = "https://image.qwenlm.ai/generated-images/b50bf4e6-6534-46a0-bd4b-b1d896955aa0/_result.png"
 THUMBNAIL_URL = "https://cdn.discordapp.com/emojis/947652669680750613.webp"  # Colombia flag emoji
 
 # Color thresholds for embed accent bar

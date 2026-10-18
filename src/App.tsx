@@ -630,7 +630,7 @@ function EmbedPreview() {
                 <div className="bg-[#2b2d31] rounded-r-sm flex-1 flex flex-col">
                   {/* Banner image */}
                   <img 
-                    src="https://image.qwenlm.ai/generated-images/a878ae01-bfa5-48ff-9074-517456b9dfb2/_result.png"
+                    src="https://image.qwenlm.ai/generated-images/b50bf4e6-6534-46a0-bd4b-b1d896955aa0/_result.png"
                     alt="Colombia Vote Party Banner"
                     className="w-full h-32 object-cover rounded-t-sm"
                   />
