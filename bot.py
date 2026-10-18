@@ -180,9 +180,47 @@ class VotePartyBot(commands.Bot):
         """Scrape all sites, update data, and edit the embed."""
         try:
             counts, total = await self.scraper.scrape_all()
+            
+            # CRITICAL: Validate we got data from all sites before updating
+            successful_sites = sum(1 for v in counts.values() if v is not None)
+            total_sites = len(counts)
+            
+            if successful_sites == 0:
+                logger.warning("⚠️ All sites failed - keeping previous data")
+                return
+            
+            if successful_sites < total_sites:
+                logger.warning(f"⚠️ Only {successful_sites}/{total_sites} sites returned data - using cached values for failed sites")
+                # Use cached values for failed sites
+                for site_name, count in counts.items():
+                    if count is None and site_name in self.scraper.last_successful_counts:
+                        counts[site_name] = self.scraper.last_successful_counts[site_name]
+                        logger.info(f"✓ Using cached value for {site_name}: {counts[site_name]}")
+                
+                # Recalculate total with cached values
+                total = sum(v for v in counts.values() if v is not None)
+            
             baseline = self.bot_data.baseline
+            
+            # CRITICAL: Validate baseline is reasonable
+            if baseline == 0 and self.bot_data.last_updated is None:
+                # First run - set baseline to current total
+                logger.info(f"🔧 First run - setting baseline to {total}")
+                baseline = total
+                self.bot_data.baseline = baseline
+                self.bot_data.save()
 
             remaining = VOTE_GOAL - (total - baseline)
+            
+            # CRITICAL: Sanity check - remaining should be between 0 and VOTE_GOAL
+            if remaining < 0 or remaining > VOTE_GOAL * 2:
+                logger.error(f"❌ Invalid remaining value: {remaining} (total: {total}, baseline: {baseline})")
+                logger.error("This indicates a corrupted baseline. Resetting...")
+                # Reset baseline to current total
+                baseline = total
+                self.bot_data.baseline = baseline
+                remaining = VOTE_GOAL
+                self.bot_data.save()
 
             # Check if vote party is complete
             if remaining <= 0:

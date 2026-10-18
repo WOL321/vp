@@ -13,6 +13,8 @@ import cloudscraper
 from bs4 import BeautifulSoup
 from config import VOTE_SITES
 
+logger = logging.getLogger("VotePartyBot")
+
 # Try to import playwright (optional - will fallback if not available)
 try:
     from playwright.async_api import async_playwright
@@ -20,8 +22,6 @@ try:
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
     logger.warning("Playwright not available - headless browser fallback disabled")
-
-logger = logging.getLogger("VotePartyBot")
 
 # User-agent rotation for better success rate
 USER_AGENTS = [
@@ -55,12 +55,13 @@ class VoteScraper:
     async def start(self):
         """Initialize the HTTP session and optionally playwright browser."""
         # Initialize aiohttp session with random user-agent
+        # Note: Removed Accept-Encoding header to let aiohttp handle compression automatically
+        # This fixes the "Can not decode content-encoding: brotli" error
         self.session = aiohttp.ClientSession(
             headers={
                 "User-Agent": random.choice(USER_AGENTS),
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             }
         )
@@ -123,30 +124,63 @@ class VoteScraper:
             
             # Minecraft-MP: Look for "Vote(s)" in table
             if site_name == "Minecraft-MP":
-                # Find the table row with "Vote(s)"
+                # Method 1: Find table row with "Vote(s)" label
                 for row in soup.find_all('tr'):
-                    if row.find('strong') and 'Vote(s)' in row.find('strong').get_text():
-                        # The next td should contain the number
+                    strong_tag = row.find('strong')
+                    if strong_tag and 'Vote(s)' in strong_tag.get_text():
+                        # Get all td elements in this row
                         tds = row.find_all('td')
                         if len(tds) >= 2:
                             vote_text = tds[1].get_text().strip()
                             # Extract number from text
-                            match = re.search(r'\d+', vote_text)
+                            match = re.search(r'(\d+)', vote_text)
                             if match:
-                                return int(match.group())
+                                count = int(match.group(1))
+                                logger.debug(f"Minecraft-MP: Found {count} via table row")
+                                return count
+                
+                # Method 2: Look for thumbs-up icon with Vote(s)
+                thumbs_up = soup.find('i', class_='fa-thumbs-o-up')
+                if thumbs_up:
+                    parent_td = thumbs_up.find_parent('td')
+                    if parent_td:
+                        next_td = parent_td.find_next_sibling('td')
+                        if next_td:
+                            vote_text = next_td.get_text().strip()
+                            match = re.search(r'(\d+)', vote_text)
+                            if match:
+                                count = int(match.group(1))
+                                logger.debug(f"Minecraft-MP: Found {count} via thumbs-up icon")
+                                return count
             
             # MinecraftServers.org: Look for "Votes" row
             elif site_name == "MinecraftServers.org":
-                # Find div with "Votes" text
+                # Method 1: Find div row with "Votes" label
                 for row in soup.find_all('div', class_='row'):
-                    cols = row.find_all('div')
+                    cols = row.find_all('div', recursive=False)
                     if len(cols) >= 2:
                         label = cols[0].get_text().strip()
                         if label == "Votes":
                             vote_text = cols[1].get_text().strip()
-                            match = re.search(r'\d+', vote_text)
+                            match = re.search(r'(\d+)', vote_text)
                             if match:
-                                return int(match.group())
+                                count = int(match.group(1))
+                                logger.debug(f"MinecraftServers.org: Found {count} via div row")
+                                return count
+                
+                # Method 2: Look for any div containing "Votes" text
+                all_divs = soup.find_all('div')
+                for i, div in enumerate(all_divs):
+                    if div.get_text().strip() == "Votes":
+                        # Check next sibling div
+                        next_div = div.find_next_sibling('div')
+                        if next_div:
+                            vote_text = next_div.get_text().strip()
+                            match = re.search(r'(\d+)', vote_text)
+                            if match:
+                                count = int(match.group(1))
+                                logger.debug(f"MinecraftServers.org: Found {count} via div search")
+                                return count
             
             # Minecraft-Server-List: Look for "Players have voted"
             elif site_name == "Minecraft-Server-List":
@@ -154,12 +188,26 @@ class VoteScraper:
                 text = soup.get_text()
                 match = re.search(r'(\d+)\s+Players have voted', text)
                 if match:
-                    return int(match.group(1))
+                    count = int(match.group(1))
+                    logger.debug(f"Minecraft-Server-List: Found {count} via 'Players have voted'")
+                    return count
                 
                 # Alternative: Look for "Votes - All time"
-                match = re.search(r'<b>(\d+)\s+Votes\s*-\s*All time</b>', html)
+                match = re.search(r'<b>(\d+)\s+Votes\s*-\s*All time</b>', html, re.IGNORECASE)
                 if match:
-                    return int(match.group(1))
+                    count = int(match.group(1))
+                    logger.debug(f"Minecraft-Server-List: Found {count} via 'Votes - All time'")
+                    return count
+                
+                # Alternative 2: Look for any bold number with "Votes"
+                bold_tags = soup.find_all('b')
+                for bold in bold_tags:
+                    text = bold.get_text()
+                    match = re.search(r'(\d+)\s*Votes', text, re.IGNORECASE)
+                    if match:
+                        count = int(match.group(1))
+                        logger.debug(f"Minecraft-Server-List: Found {count} via bold tag")
+                        return count
             
             return None
             

@@ -396,9 +396,71 @@ class VotePartyCog(commands.Cog):
             inline=True,
         )
         
+        # Current bot state
+        embed.add_field(
+            name="🤖 Current Bot State",
+            value=f"**Baseline:** {self.bot.bot_data.baseline:,}\n"
+                  f"**Remaining:** {self.bot.bot_data.remaining:,}\n"
+                  f"**Last Updated:** {self.bot.bot_data.last_updated or 'Never'}",
+            inline=False,
+        )
+        
         embed.set_footer(text="🌐 = Playwright fallback used | Higher success rates = more reliable")
         
         await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @voteparty_group.command(
+        name="fixbaseline",
+        description="Fix corrupted baseline by setting it to current total (Admin only)"
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def fixbaseline(self, interaction: discord.Interaction):
+        """Fix corrupted baseline by scraping current totals and setting baseline."""
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            # Scrape current totals
+            counts, total = await self.bot.scraper.scrape_all()
+            
+            # Check if we got valid data
+            successful_sites = sum(1 for v in counts.values() if v is not None)
+            if successful_sites == 0:
+                await interaction.followup.send(
+                    "❌ Could not scrape any sites. Please try again later.",
+                    ephemeral=True
+                )
+                return
+            
+            # Set baseline to current total
+            self.bot.bot_data.baseline = total
+            self.bot.bot_data.remaining = VOTE_GOAL
+            self.bot.bot_data.site_counts = counts
+            self.bot.bot_data.has_ping_sent = False
+            
+            now = datetime.now(timezone.utc)
+            self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
+            self.bot.bot_data.last_scrape_time = now.timestamp()
+            self.bot.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
+            self.bot.bot_data.cycle_start_time = now.timestamp()
+            
+            self.bot.bot_data.save()
+            
+            # Update embed
+            await self.bot._update_embed()
+            
+            await interaction.followup.send(
+                f"✅ Baseline fixed!\n"
+                f"**New baseline:** {total:,}\n"
+                f"**Remaining:** {VOTE_GOAL}\n"
+                f"**Sites scraped:** {successful_sites}/{len(counts)}",
+                ephemeral=True
+            )
+            
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ Error fixing baseline: {e}",
+                ephemeral=True
+            )
 
     @app_commands.command(
         name="language",
@@ -426,6 +488,7 @@ class VotePartyCog(commands.Cog):
     @forceupdate.error
     @reset.error
     @scraperstats.error
+    @fixbaseline.error
     async def voteparty_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ):
