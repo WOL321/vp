@@ -1,15 +1,16 @@
 # 🇨🇴 Colombia Vote Party Bot
 
-A production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC). Features a premium embed design with dynamic color coding, automatic scraping, and intelligent notifications.
+A production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC). Features a premium embed design inspired by Colombian indigenous cultures (Muisca, Tairona, Quimbaya), with dynamic color coding, automatic scraping, and intelligent notifications.
 
 ## ✨ Features
 
 ### 🎨 Premium Embed Design
-- **Dynamic Color Coding**: Yellow (>50 votes), Blue (31-50), Red (≤30)
+- **Colombian Indigenous Aesthetic**: Inspired by Muisca gold work, jade, and earth tones
+- **Dynamic Color Coding**: Gold (>50 votes), Turquoise (31-50), Blood Red (≤30)
 - **Visual Progress Bar**: Clean Unicode-based progress visualization
 - **Status Messages**: Dynamic messages that change with progress
 - **Professional Layout**: Strong visual hierarchy with clean spacing
-- **Dark Theme**: Modern, polished appearance
+- **Dark Theme**: Modern, polished appearance with cultural authenticity
 
 ### 🤖 Core Functionality
 - **Auto-Scraping**: Scrapes vote counts every 3 minutes from 3 sites
@@ -104,10 +105,10 @@ The embed features:
 - Color-coded accent bar
 - Professional spacing and hierarchy
 
-### Color States
-- **Yellow** (#F1C40F): >50 votes remaining - "All good! Let's get started!"
-- **Blue** (#3498DB): 31-50 votes remaining - "Getting close! Keep voting!"
-- **Red** (#E74C3C): ≤30 votes remaining - "Final push! Almost there!"
+### Color States (Colombian Indigenous Palette)
+- **Gold** (#D4AF37): >50 votes remaining - "All good! Let's get started!" (Muisca gold work)
+- **Turquoise** (#40E0D0): 31-50 votes remaining - "Getting close! Keep voting!" (Indigenous jewelry)
+- **Blood Red** (#8B0000): ≤30 votes remaining - "Final push! Almost there!" (Ceremonial significance)
 
 ## 🔧 Technical Details
 

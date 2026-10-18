@@ -23,14 +23,15 @@ import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './d
 
 const VOTE_GOAL = 250;
 
-// Mesoamerican-inspired color palette
+// Colombian indigenous-inspired color palette (Muisca, Tairona, Quimbaya)
 const COLORS = {
-  gold: '#D4AF37',
-  jade: '#00A86B',
-  obsidian: '#0a0a0a',
-  terracotta: '#C65D3B',
-  turquoise: '#008080',
-  warmDark: '#1a1612',
+  gold: '#D4AF37',        // Muisca gold work
+  jade: '#00A86B',        // Jade from Colombian cultures
+  obsidian: '#0a0a0a',    // Volcanic glass
+  earth: '#8B4513',       // Terracotta/pottery
+  blood: '#8B0000',       // Ceremonial red
+  turquoise: '#40E0D0',   // Turquoise jewelry
+  warmDark: '#1a1612',    // Warm dark background
 };
 
 // Helper function to format relative time
@@ -94,16 +95,16 @@ function CodeBlock({ code, language = 'python' }: { code: string; language?: str
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Colombian-inspired background with Wayuu pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#003893]/10 via-[#1a1a1a] to-[#1e1b18]" />
+      {/* Colombian indigenous-inspired background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 via-[#1a1612] to-[#0a0a0a]" />
       
-      {/* Mesoamerican-inspired geometric pattern overlay */}
+      {/* Colombian indigenous-inspired geometric pattern overlay */}
       <div className="absolute inset-0 opacity-[0.04]" style={{
         backgroundImage: `repeating-linear-gradient(45deg, ${COLORS.gold} 0px, ${COLORS.gold} 2px, transparent 2px, transparent 20px),
-                          repeating-linear-gradient(-45deg, ${COLORS.terracotta} 0px, ${COLORS.terracotta} 2px, transparent 2px, transparent 20px)`,
+                          repeating-linear-gradient(-45deg, ${COLORS.jade} 0px, ${COLORS.jade} 2px, transparent 2px, transparent 20px)`,
       }} />
       
-      {/* Warm glow effects */}
+      {/* Warm glow effects - Muisca gold and jade */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#D4AF37]/5 rounded-full blur-3xl" />
       <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-[#00A86B]/8 rounded-full blur-3xl" />
 
@@ -115,12 +116,12 @@ function Hero() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#D4AF37]/10 to-[#00A86B]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-medium mb-8">
             <Bot size={16} />
-            Discord Bot • Python 3.10+
+            Discord Bot • Inspired by Colombian Indigenous Cultures
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">
             🇨🇴 Colombia{' '}
-            <span className="bg-gradient-to-r from-[#D4AF37] via-[#00A86B] to-[#C65D3B] text-transparent bg-clip-text">
+            <span className="bg-gradient-to-r from-[#D4AF37] via-[#00A86B] to-[#8B0000] text-transparent bg-clip-text">
               Vote Party
             </span>{' '}
             Bot
@@ -135,14 +136,14 @@ function Hero() {
           <div className="flex flex-wrap justify-center gap-4">
             <a
               href="#code"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#D4AF37]/90 hover:from-[#D4AF37]/90 hover:to-[#D4AF37] text-[#0a0a0a] font-semibold transition-all shadow-lg shadow-[#D4AF37]/20"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#D4AF37]/90 hover:from-[#D4AF37]/90 hover:to-[#D4AF37] text-[#0a0a0a] font-semibold transition-all shadow-lg shadow-[#D4AF37]/30"
             >
               <Code2 size={18} />
               View Source Code
             </a>
             <a
               href="#setup"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#2b2d31] hover:bg-[#35373c] text-white font-semibold border border-[#3f4147] transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1a1612] hover:bg-[#2a2622] text-[#D4AF37] font-semibold border border-[#D4AF37]/30 transition-colors"
             >
               <Terminal size={18} />
               Setup Guide
@@ -161,7 +162,7 @@ function Hero() {
             { label: 'Vote Goal', value: '250', icon: Target, color: COLORS.gold },
             { label: 'Scrape Interval', value: '3 min', icon: Clock, color: COLORS.turquoise },
             { label: 'Vote Sites', value: '3', icon: Vote, color: COLORS.jade },
-            { label: 'Ping Threshold', value: '30', icon: Bell, color: COLORS.terracotta },
+            { label: 'Ping Threshold', value: '30', icon: Bell, color: COLORS.blood },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -199,7 +200,7 @@ function Features() {
       title: 'Role Notifications',
       description:
         'Pings the VP role when remaining votes drop to 30 or below (once per cycle). Members toggle notifications with a single button click.',
-      color: COLORS.terracotta,
+      color: COLORS.blood,
     },
     {
       icon: Shield,
@@ -219,7 +220,7 @@ function Features() {
       icon: Users,
       title: 'Dynamic Color-Coded Embed',
       description:
-        'Premium embed with accent bar that changes color: gold (>50 remaining), turquoise (31-50), terracotta (≤30). Includes dynamic status messages and progress visualization.',
+        'Premium embed with accent bar that changes color: gold (>50 remaining), turquoise (31-50), blood red (≤30). Includes dynamic status messages and progress visualization.',
       color: COLORS.turquoise,
     },
   ];
@@ -293,7 +294,7 @@ function Commands() {
       name: '/voteparty action:setbaseline',
       description: 'Set the current total vote sum as the new baseline',
       permission: 'Administrator',
-      color: COLORS.terracotta,
+      color: COLORS.earth,
     },
     {
       name: '/voteparty action:forceupdate',
@@ -444,7 +445,7 @@ function SetupGuide() {
     },
     {
       title: 'Create the VP Role',
-      color: COLORS.terracotta,
+      color: COLORS.blood,
       description:
         'In Server Settings → Roles, create a role named exactly "VP". Ensure the bot\'s role is above VP in the hierarchy.',
     },
@@ -534,7 +535,7 @@ function EmbedPreview() {
   const states = {
     yellow: { remaining: 120, color: COLORS.gold, label: 'Early Stage', status: '✅ **All good! Let\'s get started!**' },
     blue: { remaining: 47, color: COLORS.turquoise, label: 'Mid Stage', status: '⚡ **Getting close! Keep voting!**' },
-    red: { remaining: 23, color: COLORS.terracotta, label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
+    red: { remaining: 23, color: COLORS.blood, label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
   };
 
   const current = states[previewState];
@@ -628,9 +629,9 @@ function EmbedPreview() {
                 
                 {/* Embed content */}
                 <div className="bg-[#2b2d31] rounded-r-sm flex-1 flex flex-col">
-                  {/* Banner image */}
+                  {/* Banner image - Colombian indigenous inspired */}
                   <img 
-                    src="https://image.qwenlm.ai/generated-images/f8decf88-c57f-4bc2-b1da-7b729ba6a52b/_result.png"
+                    src="https://image.qwenlm.ai/generated-images/eec8e122-9980-4954-a34e-c6ffeae38ffa/_result.png"
                     alt="Colombia Vote Party Banner"
                     className="w-full h-32 object-cover rounded-t-sm"
                   />
@@ -734,16 +735,16 @@ function EmbedPreview() {
 function Footer() {
   return (
     <footer className="border-t border-[#3f4147] mt-10 relative">
-      {/* Mesoamerican-inspired stripe at the bottom */}
+      {/* Colombian indigenous-inspired stripe at the bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1 flex">
         <div className="flex-1" style={{ backgroundColor: COLORS.gold }} />
         <div className="flex-1" style={{ backgroundColor: COLORS.jade }} />
-        <div className="flex-1" style={{ backgroundColor: COLORS.terracotta }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.blood }} />
       </div>
       
       <div className="max-w-6xl mx-auto px-6 py-10 text-center">
         <p className="text-gray-500 text-sm">
-          🇨🇴 Colombia Vote Party Bot • Built for DiplomaticaMC • Python + discord.py 2.x
+          🇨🇴 Colombia Vote Party Bot • Inspired by Muisca, Tairona & Quimbaya cultures • Built for DiplomaticaMC
         </p>
         <div className="flex justify-center gap-6 mt-4">
           <a
@@ -766,7 +767,7 @@ function Footer() {
             href="https://minecraftservers.org/server/679302"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#C65D3B] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#8B0000] text-sm transition-colors"
           >
             MinecraftServers.org
           </a>
@@ -778,7 +779,7 @@ function Footer() {
 
 export default function App() {
   return (
-    <div className="min-h-screen text-white" style={{ backgroundColor: COLORS.warmDark }}>
+    <div className="min-h-screen text-white bg-[#1a1612]">
       <Hero />
       <Features />
       <Commands />
