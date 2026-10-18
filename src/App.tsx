@@ -23,6 +23,16 @@ import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './d
 
 const VOTE_GOAL = 250;
 
+// Colombian color palette
+const COLORS = {
+  yellow: '#FCD116',
+  blue: '#003893',
+  red: '#CE1126',
+  emerald: '#50C878',
+  darkBg: '#1a1a1a',
+  warmDark: '#1e1b18',
+};
+
 // Helper function to format relative time
 function formatRelativeTime(seconds: number): string {
   if (seconds < 5) return 'just now';
@@ -84,9 +94,18 @@ function CodeBlock({ code, language = 'python' }: { code: string; language?: str
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#5865F2]/20 via-[#1e1f22] to-[#1e1f22]" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#5865F2]/10 rounded-full blur-3xl" />
+      {/* Colombian-inspired background with Wayuu pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#003893]/10 via-[#1a1a1a] to-[#1e1b18]" />
+      
+      {/* Wayuu-inspired geometric pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, ${COLORS.yellow} 0px, ${COLORS.yellow} 2px, transparent 2px, transparent 20px),
+                          repeating-linear-gradient(-45deg, ${COLORS.red} 0px, ${COLORS.red} 2px, transparent 2px, transparent 20px)`,
+      }} />
+      
+      {/* Warm glow effects */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#FCD116]/5 rounded-full blur-3xl" />
+      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-[#003893]/8 rounded-full blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto px-6 py-24 text-center">
         <motion.div
@@ -94,14 +113,14 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#5865F2]/10 border border-[#5865F2]/30 text-[#5865F2] text-sm font-medium mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FCD116]/10 to-[#003893]/10 border border-[#FCD116]/30 text-[#FCD116] text-sm font-medium mb-8">
             <Bot size={16} />
             Discord Bot • Python 3.10+
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">
             🇨🇴 Colombia{' '}
-            <span className="bg-gradient-to-r from-[#5865F2] to-[#EB459E] text-transparent bg-clip-text">
+            <span className="bg-gradient-to-r from-[#FCD116] via-[#003893] to-[#CE1126] text-transparent bg-clip-text">
               Vote Party
             </span>{' '}
             Bot
@@ -116,7 +135,7 @@ function Hero() {
           <div className="flex flex-wrap justify-center gap-4">
             <a
               href="#code"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#FCD116] to-[#FCD116]/90 hover:from-[#FCD116]/90 hover:to-[#FCD116] text-[#1a1a1a] font-semibold transition-all shadow-lg shadow-[#FCD116]/20"
             >
               <Code2 size={18} />
               View Source Code
@@ -139,16 +158,16 @@ function Hero() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto"
         >
           {[
-            { label: 'Vote Goal', value: '250', icon: Target },
-            { label: 'Scrape Interval', value: '3 min', icon: Clock },
-            { label: 'Vote Sites', value: '3', icon: Vote },
-            { label: 'Ping Threshold', value: '30', icon: Bell },
+            { label: 'Vote Goal', value: '250', icon: Target, color: COLORS.yellow },
+            { label: 'Scrape Interval', value: '3 min', icon: Clock, color: COLORS.blue },
+            { label: 'Vote Sites', value: '3', icon: Vote, color: COLORS.emerald },
+            { label: 'Ping Threshold', value: '30', icon: Bell, color: COLORS.red },
           ].map((stat) => (
             <div
               key={stat.label}
-              className="bg-[#2b2d31]/80 backdrop-blur rounded-xl p-4 border border-[#3f4147]"
+              className="bg-[#2b2d31]/80 backdrop-blur rounded-xl p-4 border border-[#3f4147] hover:border-[#FCD116]/30 transition-colors"
             >
-              <stat.icon size={20} className="text-[#5865F2] mx-auto mb-2" />
+              <stat.icon size={20} className="mx-auto mb-2" style={{ color: stat.color }} />
               <div className="text-2xl font-bold text-white">{stat.value}</div>
               <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
             </div>
@@ -166,36 +185,42 @@ function Features() {
       title: 'Robust Auto-Scraping',
       description:
         'Scrapes "Vote(s)" from Minecraft-MP, "Votes" from MinecraftServers.org, and monthly/all-time votes from Minecraft-Server-List. Uses multiple selector strategies + regex fallbacks.',
+      color: COLORS.yellow,
     },
     {
       icon: Target,
       title: 'Smart Cycle Detection',
       description:
         'Automatically detects when 250 votes are reached and resets for the next vote party cycle. No manual intervention needed.',
+      color: COLORS.blue,
     },
     {
       icon: Bell,
       title: 'Role Notifications',
       description:
         'Pings the VP role when remaining votes drop to 30 or below (once per cycle). Members toggle notifications with a single button click.',
+      color: COLORS.red,
     },
     {
       icon: Shield,
       title: 'Admin Controls',
       description:
         'Full slash command suite: setup tracker, set remaining votes, reset baseline, force updates. All Administrator-only.',
+      color: COLORS.emerald,
     },
     {
       icon: Zap,
       title: 'Persistent Single Embed',
       description:
         'Edits one message in-place — never spams the channel. Survives bot restarts via JSON persistence. Professional and clean.',
+      color: COLORS.yellow,
     },
     {
       icon: Users,
       title: 'Dynamic Color-Coded Embed',
       description:
         'Premium embed with accent bar that changes color: yellow (>50 remaining), blue (31-50), red (≤30). Includes dynamic status messages and progress visualization.',
+      color: COLORS.blue,
     },
   ];
 
@@ -224,10 +249,22 @@ function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
-            className="bg-[#2b2d31] rounded-xl p-6 border border-[#3f4147] hover:border-[#5865F2]/50 transition-colors"
+            className="bg-[#2b2d31] rounded-xl p-6 border border-[#3f4147] transition-all hover:scale-105"
+            style={{ '--hover-color': feature.color } as any}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = feature.color + '80';
+              e.currentTarget.style.boxShadow = `0 10px 30px -10px ${feature.color}40`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#3f4147';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
-            <div className="w-10 h-10 rounded-lg bg-[#5865F2]/10 flex items-center justify-center mb-4">
-              <feature.icon size={20} className="text-[#5865F2]" />
+            <div 
+              className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+              style={{ backgroundColor: feature.color + '20' }}
+            >
+              <feature.icon size={20} style={{ color: feature.color }} />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
@@ -244,21 +281,25 @@ function Commands() {
       name: '/voteparty action:setup',
       description: 'Post or update the tracker embed in the current channel',
       permission: 'Administrator',
+      color: COLORS.yellow,
     },
     {
       name: '/voteparty action:setremaining value:<number>',
       description: 'Manually set the number of remaining votes (0-250)',
       permission: 'Administrator',
+      color: COLORS.blue,
     },
     {
       name: '/voteparty action:setbaseline',
       description: 'Set the current total vote sum as the new baseline',
       permission: 'Administrator',
+      color: COLORS.red,
     },
     {
       name: '/voteparty action:forceupdate',
       description: 'Force an immediate scrape of all sites and update the embed',
       permission: 'Administrator',
+      color: COLORS.emerald,
     },
   ];
 
@@ -289,8 +330,8 @@ function Commands() {
             className="bg-[#2b2d31] rounded-xl p-5 border border-[#3f4147] flex flex-col md:flex-row md:items-center gap-3"
           >
             <div className="flex items-center gap-3 md:w-96 shrink-0">
-              <ChevronRight size={16} className="text-[#5865F2]" />
-              <code className="text-[#5865F2] font-mono text-sm font-semibold">
+              <ChevronRight size={16} style={{ color: cmd.color }} />
+              <code className="font-mono text-sm font-semibold" style={{ color: cmd.color }}>
                 {cmd.name}
               </code>
             </div>
@@ -340,11 +381,15 @@ function CodeViewer() {
             <button
               key={tab.name}
               onClick={() => setActiveTab(tab.name)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.name
-                  ? 'bg-[#2b2d31] text-white border border-[#3f4147]'
+                  ? 'text-white border'
                   : 'text-gray-400 hover:text-white hover:bg-[#2b2d31]/50'
               }`}
+              style={activeTab === tab.name ? {
+                backgroundColor: COLORS.yellow + '20',
+                borderColor: COLORS.yellow + '60',
+              } : {}}
             >
               <tab.icon size={14} />
               {tab.name}
@@ -372,6 +417,7 @@ function SetupGuide() {
   const steps = [
     {
       title: 'Create a Discord Bot',
+      color: COLORS.yellow,
       description: (
         <>
           Go to{' '}
@@ -379,7 +425,8 @@ function SetupGuide() {
             href="https://discord.com/developers/applications"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#5865F2] hover:underline inline-flex items-center gap-1"
+            className="hover:underline inline-flex items-center gap-1"
+            style={{ color: COLORS.blue }}
           >
             Discord Developer Portal <ExternalLink size={12} />
           </a>
@@ -391,16 +438,19 @@ function SetupGuide() {
     },
     {
       title: 'Invite the Bot',
+      color: COLORS.blue,
       description:
         'Use the OAuth2 URL Generator with scopes: bot + applications.commands. Select permissions: Send Messages, Embed Links, Manage Messages, Manage Roles, Read Message History, Use Slash Commands.',
     },
     {
       title: 'Create the VP Role',
+      color: COLORS.red,
       description:
         'In Server Settings → Roles, create a role named exactly "VP". Ensure the bot\'s role is above VP in the hierarchy.',
     },
     {
       title: 'Install & Run',
+      color: COLORS.emerald,
       description: (
         <div className="mt-3 space-y-2">
           <CodeBlock
@@ -414,6 +464,7 @@ python bot.py`}
     },
     {
       title: 'Initialize the Tracker',
+      color: COLORS.yellow,
       description:
         'In your desired channel, run /voteparty action:setup. The tracker embed will appear with the 🔔 Get Notified button.',
     },
@@ -446,7 +497,10 @@ python bot.py`}
             className="flex gap-5"
           >
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-[#5865F2] flex items-center justify-center text-white font-bold text-sm shrink-0">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                style={{ backgroundColor: step.color }}
+              >
                 {i + 1}
               </div>
               {i < steps.length - 1 && (
@@ -467,7 +521,7 @@ python bot.py`}
 }
 
 function EmbedPreview() {
-  const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('blue');
+  const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('yellow');
   const [lastUpdateSeconds, setLastUpdateSeconds] = useState(21);
 
   useEffect(() => {
@@ -478,9 +532,9 @@ function EmbedPreview() {
   }, []);
 
   const states = {
-    yellow: { remaining: 120, color: '#F1C40F', label: 'Early Stage', status: '✅ **All good! Let\'s get started!**' },
-    blue: { remaining: 47, color: '#3498DB', label: 'Mid Stage', status: '⚡ **Getting close! Keep voting!**' },
-    red: { remaining: 23, color: '#E74C3C', label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
+    yellow: { remaining: 120, color: COLORS.yellow, label: 'Early Stage', status: '✅ **All good! Let\'s get started!**' },
+    blue: { remaining: 47, color: COLORS.blue, label: 'Mid Stage', status: '⚡ **Getting close! Keep voting!**' },
+    red: { remaining: 23, color: COLORS.red, label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
   };
 
   const current = states[previewState];
@@ -514,13 +568,17 @@ function EmbedPreview() {
               }}
               className={`px-5 py-2.5 rounded-md text-sm font-semibold transition-all ${
                 previewState === key
-                  ? 'bg-[#5865F2] text-white'
+                  ? 'text-white shadow-lg'
                   : 'bg-[#2b2d31] text-gray-400 hover:text-white hover:bg-[#35373c]'
               }`}
+              style={previewState === key ? {
+                backgroundColor: state.color,
+                boxShadow: `0 10px 25px -5px ${state.color}40`,
+              } : {}}
             >
               <span
                 className="inline-block w-2.5 h-2.5 rounded-full mr-2"
-                style={{ backgroundColor: state.color }}
+                style={{ backgroundColor: previewState === key ? 'white' : state.color }}
               />
               {state.label}
             </button>
@@ -643,7 +701,10 @@ function EmbedPreview() {
 
               {/* Button */}
               <div className="mt-2">
-                <button className="bg-[#4e505c] hover:bg-[#6d6f7b] text-white text-sm font-medium px-4 py-1.5 rounded-sm transition-colors">
+                <button 
+                  className="text-white text-sm font-medium px-4 py-1.5 rounded-sm transition-all hover:opacity-90"
+                  style={{ backgroundColor: current.color }}
+                >
                   🔔 Get Notified
                 </button>
               </div>
@@ -657,17 +718,24 @@ function EmbedPreview() {
 
 function Footer() {
   return (
-    <footer className="border-t border-[#3f4147] mt-10">
+    <footer className="border-t border-[#3f4147] mt-10 relative">
+      {/* Colombian flag stripe at the bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 flex">
+        <div className="flex-1" style={{ backgroundColor: COLORS.yellow }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.blue }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.red }} />
+      </div>
+      
       <div className="max-w-6xl mx-auto px-6 py-10 text-center">
         <p className="text-gray-500 text-sm">
-          Colombia Vote Party Bot • Built for DiplomaticaMC • Python + discord.py 2.x
+          🇨🇴 Colombia Vote Party Bot • Built for DiplomaticaMC • Python + discord.py 2.x
         </p>
         <div className="flex justify-center gap-6 mt-4">
           <a
             href="https://discord.com/developers/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#5865F2] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#FCD116] text-sm transition-colors"
           >
             Discord.py Docs
           </a>
@@ -675,7 +743,7 @@ function Footer() {
             href="https://minecraft-mp.com/server-s349345"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#5865F2] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#003893] text-sm transition-colors"
           >
             Minecraft-MP
           </a>
@@ -683,7 +751,7 @@ function Footer() {
             href="https://minecraftservers.org/server/679302"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#5865F2] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#CE1126] text-sm transition-colors"
           >
             MinecraftServers.org
           </a>
@@ -695,7 +763,7 @@ function Footer() {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#1e1f22] text-white">
+    <div className="min-h-screen text-white" style={{ backgroundColor: COLORS.warmDark }}>
       <Hero />
       <Features />
       <Commands />
