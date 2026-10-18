@@ -536,8 +536,8 @@ class EmbedBuilder:
         embed.description += "🗳️ **Vote Counts**\n"
 
         # Individual site votes with color-coded emojis
-        # 🟡 = Minecraft-MP, 🔷 = MinecraftServers.org, 🔴 = Minecraft-Server-List
-        site_emojis = ["🟡", "🔷", "🔴"]
+        # 🟡 = Minecraft-MP, 🔵 = MinecraftServers.org, 🔴 = Minecraft-Server-List
+        site_emojis = ["🟡", "🔵", "🔴"]
         for i, site in enumerate(VOTE_SITES):
             name = site["name"]
             count = site_counts.get(name)
