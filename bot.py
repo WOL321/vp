@@ -337,15 +337,35 @@ class VotePartyBot(commands.Bot):
 
 def main():
     """Entry point for the bot."""
+    # Debug: Check for token in multiple ways
     token = os.environ.get("DISCORD_BOT_TOKEN")
+    
+    if not token:
+        # Try loading from .env file if it exists
+        try:
+            from dotenv import load_dotenv
+            if os.path.exists(".env"):
+                logger.info("Found .env file, loading...")
+                load_dotenv()
+                token = os.environ.get("DISCORD_BOT_TOKEN")
+        except Exception as e:
+            logger.warning(f"Could not load .env file: {e}")
+    
     if not token:
         logger.error("=" * 60)
         logger.error("DISCORD_BOT_TOKEN environment variable not set!")
         logger.error("Please set it before running:")
         logger.error("  export DISCORD_BOT_TOKEN='your_token_here'")
         logger.error("=" * 60)
+        logger.error("")
+        logger.error("Debug info:")
+        logger.error(f"  Current working directory: {os.getcwd()}")
+        logger.error(f"  .env file exists: {os.path.exists('.env')}")
+        logger.error(f"  Environment variables starting with 'DISCORD': {[k for k in os.environ.keys() if 'DISCORD' in k.upper()]}")
+        logger.error("=" * 60)
         return
 
+    logger.info("✓ Bot token found, starting bot...")
     bot = VotePartyBot()
     bot.run(token, log_handler=None)
 
