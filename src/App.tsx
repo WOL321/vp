@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   Bot,
-  Vote,
   Bell,
   Shield,
   Clock,
@@ -15,14 +14,13 @@ import {
   RefreshCw,
   Target,
   Users,
-  Github,
-  ArrowRight,
   Sparkles,
-  Server,
+  Trophy,
+  Globe,
+  Timer,
   MessageSquare,
-  Settings,
-  Eye,
-  Palette,
+  TrendingUp,
+  Award,
 } from 'lucide-react';
 import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './data/botCode';
 
@@ -32,24 +30,10 @@ const VOTE_GOAL = 250;
 
 // ─── Utility Functions ───────────────────────────────────────────────────────
 
-function formatRelativeTime(seconds: number): string {
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
 function formatCountdown(elapsedSeconds: number): string {
-  const SCRAPE_INTERVAL = 180;
+  const SCRAPE_INTERVAL = 15;
   const remaining = Math.max(0, SCRAPE_INTERVAL - (elapsedSeconds % SCRAPE_INTERVAL));
-  if (remaining < 60) return `${remaining}s`;
-  const minutes = Math.floor(remaining / 60);
-  const secs = remaining % 60;
-  return `${minutes}m ${secs}s`;
+  return `${remaining}s`;
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -121,6 +105,7 @@ function Navbar() {
             <Bot size={16} className="text-black" />
           </div>
           <span className="font-bold text-white text-sm">VoteParty Bot</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-400 font-medium">v2</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
@@ -129,7 +114,7 @@ function Navbar() {
           <a href="#setup" className="text-sm text-gray-400 hover:text-white transition-colors">Setup</a>
         </div>
         <a
-          href="#code"
+          href="#setup"
           className="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors"
         >
           Get Started
@@ -144,14 +129,12 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-yellow-500/[0.07] rounded-full blur-[128px]" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/[0.05] rounded-full blur-[128px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/[0.03] rounded-full blur-[128px]" />
       </div>
       
-      {/* Grid pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
       <div className="relative max-w-5xl mx-auto px-6 text-center pt-20">
@@ -160,7 +143,6 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -168,10 +150,9 @@ function Hero() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] text-gray-400 text-sm font-medium mb-8"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Production Ready • Python 3.10+
+            Premium Edition • Python 3.10+ • Modular Architecture
           </motion.div>
 
-          {/* Main heading */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[0.9] mb-6">
             <span className="block">Vote Party</span>
             <span className="block mt-2 bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
@@ -179,13 +160,11 @@ function Hero() {
             </span>
           </h1>
 
-          {/* Subtitle */}
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
-            A production-ready Discord bot that auto-scrapes vote counts, manages
-            vote party cycles, and notifies your community — all in a single elegant embed.
+            A premium Discord bot with self-reporting votes, leaderboards, streaks,
+            bilingual support, and a beautiful multi-state embed system.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex flex-wrap justify-center gap-4 mb-16">
             <a
               href="#code"
@@ -193,7 +172,6 @@ function Hero() {
             >
               <Code2 size={16} />
               View Source Code
-              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
             </a>
             <a
               href="#setup"
@@ -204,13 +182,12 @@ function Hero() {
             </a>
           </div>
 
-          {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
             {[
               { label: 'Vote Goal', value: '250', icon: Target },
-              { label: 'Scrape Rate', value: '3 min', icon: Clock },
-              { label: 'Vote Sites', value: '3', icon: Vote },
-              { label: 'Ping At', value: '≤30', icon: Bell },
+              { label: 'Scrape Rate', value: '15s', icon: Clock },
+              { label: 'Languages', value: 'EN/ES', icon: Globe },
+              { label: 'Modules', value: '7', icon: Code2 },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -227,7 +204,6 @@ function Hero() {
           </div>
         </motion.div>
 
-        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -251,46 +227,67 @@ function Hero() {
 function Features() {
   const features = [
     {
-      icon: RefreshCw,
-      title: 'Auto-Scraping Engine',
-      description: 'Scrapes vote counts from 3 sites every 3 minutes with multiple selector strategies and regex fallbacks for reliability.',
+      icon: Sparkles,
+      title: 'Multi-State Embeds',
+      description: '6 distinct visual states: Normal, Momentum, Close, Final Push, Celebration, and Cooldown — each with unique colors and messaging.',
       gradient: 'from-yellow-500/20 to-amber-500/20',
       iconColor: 'text-yellow-400',
     },
     {
-      icon: Target,
-      title: 'Smart Cycle Detection',
-      description: 'Automatically detects when 250 votes are reached, triggers the party, and resets for the next cycle.',
+      icon: Trophy,
+      title: 'Self-Report Votes',
+      description: 'Players claim votes with "I Voted!" button. Includes 1hr cooldown, streak tracking, and per-site contribution counting.',
       gradient: 'from-blue-500/20 to-cyan-500/20',
       iconColor: 'text-blue-400',
     },
     {
-      icon: Bell,
-      title: 'Role Notifications',
-      description: 'Pings the VP role when remaining votes drop to 30 or below. Members toggle notifications with a persistent button.',
-      gradient: 'from-red-500/20 to-rose-500/20',
-      iconColor: 'text-red-400',
+      icon: Award,
+      title: 'Leaderboards & Stats',
+      description: 'Cycle and all-time leaderboards. Personal stats with /myvotes. Historical tracking of fastest parties and voting rates.',
+      gradient: 'from-purple-500/20 to-violet-500/20',
+      iconColor: 'text-purple-400',
     },
     {
-      icon: Shield,
-      title: 'Admin Slash Commands',
-      description: 'Full command suite: setup tracker, set remaining votes, reset baseline, force updates, and more.',
+      icon: Globe,
+      title: 'Bilingual Support',
+      description: 'Full English and Spanish translations. Users switch with /language. All embeds, buttons, and messages are localized.',
       gradient: 'from-emerald-500/20 to-green-500/20',
       iconColor: 'text-emerald-400',
     },
     {
       icon: Zap,
-      title: 'Single Embed Editing',
-      description: 'Edits one message in-place — never spams the channel. Survives bot restarts via JSON persistence.',
-      gradient: 'from-purple-500/20 to-violet-500/20',
-      iconColor: 'text-purple-400',
-    },
-    {
-      icon: Palette,
-      title: 'Dynamic Color Coding',
-      description: 'Premium embed with accent bar that shifts color based on remaining votes with contextual status messages.',
+      title: 'Premium Buttons',
+      description: '5 persistent interactive buttons: I Voted, Get Notified, How to Vote, Remind Me Later, and Leaderboard.',
       gradient: 'from-orange-500/20 to-amber-500/20',
       iconColor: 'text-orange-400',
+    },
+    {
+      icon: Timer,
+      title: 'Smart Reminders',
+      description: 'DM reminders after 30min. Voting rate calculation. Estimated completion time. Per-site contribution tracking.',
+      gradient: 'from-red-500/20 to-rose-500/20',
+      iconColor: 'text-red-400',
+    },
+    {
+      icon: Shield,
+      title: 'Admin Suite',
+      description: 'Full /voteparty command group: setup, setremaining, setbaseline, forceupdate, reset. All with clean error handling.',
+      gradient: 'from-indigo-500/20 to-blue-500/20',
+      iconColor: 'text-indigo-400',
+    },
+    {
+      icon: TrendingUp,
+      title: 'Voting Analytics',
+      description: 'Real-time voting rate, estimated completion, cycle duration tracking, and historical party statistics.',
+      gradient: 'from-teal-500/20 to-cyan-500/20',
+      iconColor: 'text-teal-400',
+    },
+    {
+      icon: Users,
+      title: 'Minecraft Linking',
+      description: 'Players link their Minecraft IGN with /link. Required for vote claiming. Enables personalized experience.',
+      gradient: 'from-pink-500/20 to-rose-500/20',
+      iconColor: 'text-pink-400',
     },
   ];
 
@@ -305,13 +302,13 @@ function Features() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-gray-400 text-xs font-medium mb-4">
             <Sparkles size={12} />
-            Features
+            Premium Features
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
             Everything you need
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Built with clean modular code, proper error handling, and designed for zero-maintenance operation.
+            A complete rewrite with modular architecture, premium embeds, and engaging social features.
           </p>
         </motion.div>
 
@@ -322,7 +319,7 @@ function Features() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
+              transition={{ delay: i * 0.06 }}
               className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
             >
               <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4`}>
@@ -343,22 +340,19 @@ function Features() {
 function LiveTracker() {
   const [votes, setVotes] = useState(103);
   const [elapsed, setElapsed] = useState(0);
-  const [lastUpdate, setLastUpdate] = useState(0);
   const [siteVotes, setSiteVotes] = useState([
-    { name: 'Minecraft-MP', votes: 4441, dot: '🟡' },
-    { name: 'MinecraftServers.org', votes: 4745, dot: '🔵' },
-    { name: 'Minecraft-Server-List', votes: 4495, dot: '🔴' },
+    { name: 'Minecraft-MP', votes: 4441, emoji: '🟡', contribution: 12 },
+    { name: 'MinecraftServers.org', votes: 4745, emoji: '🔵', contribution: 8 },
+    { name: 'Minecraft-Server-List', votes: 4495, emoji: '🔴', contribution: 15 },
   ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsed((prev) => prev + 1);
-      setLastUpdate((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate vote changes
   useEffect(() => {
     const voteInterval = setInterval(() => {
       setVotes((prev) => {
@@ -368,7 +362,9 @@ function LiveTracker() {
       setSiteVotes((prev) =>
         prev.map((site) => {
           const delta = Math.floor(Math.random() * 5) - 1;
-          return { ...site, votes: Math.max(0, site.votes + delta) };
+          const newVotes = Math.max(0, site.votes + delta);
+          const newContribution = delta > 0 ? site.contribution + 1 : site.contribution;
+          return { ...site, votes: newVotes, contribution: newContribution };
         })
       );
     }, 8000);
@@ -401,14 +397,14 @@ function LiveTracker() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-gray-400 text-xs font-medium mb-4">
-            <Eye size={12} />
+            <Zap size={12} />
             Live Preview
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
             See it in action
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
-            This is a live simulation of what the tracker embed looks like in your Discord channel.
+            A live simulation of the premium tracker embed with interactive buttons.
           </p>
         </motion.div>
 
@@ -418,9 +414,8 @@ function LiveTracker() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto"
         >
-          {/* Discord embed mockup - wide format like real Discord */}
+          {/* Discord embed mockup */}
           <div className="rounded-xl bg-[#313338] border border-white/[0.04] overflow-hidden shadow-2xl shadow-black/50">
-            {/* Discord message header */}
             <div className="px-5 pt-5 pb-1 flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Bot size={18} className="text-black" />
@@ -432,62 +427,60 @@ function LiveTracker() {
                   <span className="text-xs text-gray-500">Today at {timeStr}</span>
                 </div>
 
-                {/* Embed - wide rectangle with left accent border */}
+                {/* Embed */}
                 <div className="mt-2 rounded-md overflow-hidden bg-[#2b2d31] border-l-[3px] border-yellow-400">
                   <div className="px-4 py-3">
-                    {/* Title */}
                     <div className="text-white font-bold text-[15px] mb-2">
                       🇨🇴 Colombia Vote Party
                     </div>
 
-                    {/* Remaining */}
                     <div className="text-[#dbdee1] text-[14px] mb-0.5">
                       <span className="font-semibold text-white">{remaining}</span> votes remaining
                     </div>
 
-                    {/* Progress bar */}
                     <div className="text-[13px] tracking-wider mb-0.5 font-sans">
                       {progressBar} <span className="text-[#949ba4]">{progress.toFixed(1)}%</span>
                     </div>
 
-                    {/* Votes collected */}
-                    <div className="text-[#949ba4] text-[13px] mb-2">
+                    <div className="text-[#949ba4] text-[13px] mb-1">
                       {votes} / {VOTE_GOAL} votes collected
                     </div>
 
-                    {/* Motivational */}
-                    <div className="text-[#dbdee1] text-[13px]">
+                    <div className="text-[#dbdee1] text-[13px] mb-1">
                       {getMotivational()}
                     </div>
 
-                    {/* Divider */}
+                    {/* Rate + estimate */}
+                    <div className="text-[#949ba4] text-[12px] mb-2">
+                      📈 4.2 votes/hour • 🕐 Est: ~38m
+                    </div>
+
                     <div className="text-[#4e5058] text-[13px] mt-2 mb-1.5 select-none leading-none">
                       ━━━━━━━━━━━━━━━━━━━━
                     </div>
 
-                    {/* Vote Counts header */}
                     <div className="text-[#dbdee1] text-[13px] font-semibold mb-1">
                       🗳️ Vote Counts
                     </div>
 
-                    {/* Site votes */}
                     <div className="space-y-0.5 mb-2">
                       {siteVotes.map((site) => (
                         <div key={site.name} className="text-[13px] leading-relaxed">
-                          <span>{site.dot}</span>{' '}
+                          <span>{site.emoji}</span>{' '}
                           <span className="text-[#dbdee1]">{site.name}</span>{' '}
                           <span className="text-[#6d6f78]">—</span>{' '}
                           <span className="text-white font-semibold">{site.votes.toLocaleString()}</span>
+                          {site.contribution > 0 && (
+                            <span className="text-emerald-400 text-[11px] ml-1">(+{site.contribution})</span>
+                          )}
                         </div>
                       ))}
                     </div>
 
-                    {/* Vote Now header */}
                     <div className="text-[#dbdee1] text-[13px] font-semibold mb-1">
                       🔗 Vote Now!
                     </div>
 
-                    {/* Vote links */}
                     <div className="space-y-0.5 mb-2">
                       {siteVotes.map((site, i) => (
                         <div key={site.name} className="text-[13px] text-[#00a8fc] hover:underline cursor-pointer leading-relaxed">
@@ -496,21 +489,33 @@ function LiveTracker() {
                       ))}
                     </div>
 
-                    {/* Footer */}
-                    <div className="text-[#6d6f78] text-[11px] mt-2 flex items-center gap-1">
-                      <span>Updates every 15s • Today at {timeStr}</span>
+                    <div className="text-[#6d6f78] text-[11px] mt-2">
+                      Updates every 15s • Today at {timeStr}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Notification button - Discord component style */}
+            {/* Interactive buttons */}
             <div className="px-5 pb-4 pt-1 pl-[72px]">
-              <button className="py-1.5 px-4 rounded-sm bg-[#4e5058] hover:bg-[#6d6f78] text-white text-[13px] font-medium transition-colors flex items-center gap-2">
-                <Bell size={14} />
-                Get Notified When Close
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button className="py-1.5 px-3 rounded-sm bg-[#248046] hover:bg-[#1a6334] text-white text-[13px] font-medium transition-colors">
+                  ✅ I Voted!
+                </button>
+                <button className="py-1.5 px-3 rounded-sm bg-[#5865f2] hover:bg-[#4752c4] text-white text-[13px] font-medium transition-colors">
+                  🔔 Get Notified
+                </button>
+                <button className="py-1.5 px-3 rounded-sm bg-[#4e5058] hover:bg-[#6d6f78] text-white text-[13px] font-medium transition-colors">
+                  📖 How to Vote
+                </button>
+                <button className="py-1.5 px-3 rounded-sm bg-[#4e5058] hover:bg-[#6d6f78] text-white text-[13px] font-medium transition-colors">
+                  ⏰ Remind Me
+                </button>
+                <button className="py-1.5 px-3 rounded-sm bg-[#4e5058] hover:bg-[#6d6f78] text-white text-[13px] font-medium transition-colors">
+                  🏆 Leaderboard
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -522,12 +527,13 @@ function LiveTracker() {
 // ─── Source Code Section ─────────────────────────────────────────────────────
 
 function SourceCode() {
-  const [activeTab, setActiveTab] = useState<'bot' | 'requirements' | 'env'>('bot');
+  const [activeTab, setActiveTab] = useState<'bot' | 'requirements' | 'env' | 'setup'>('bot');
 
   const tabs = [
-    { id: 'bot' as const, label: 'bot.py', icon: FileCodeIcon },
-    { id: 'requirements' as const, label: 'requirements.txt', icon: ListIcon },
-    { id: 'env' as const, label: '.env.example', icon: Settings },
+    { id: 'bot' as const, label: 'bot.py' },
+    { id: 'requirements' as const, label: 'requirements.txt' },
+    { id: 'env' as const, label: '.env.example' },
+    { id: 'setup' as const, label: 'Setup Guide' },
   ];
 
   const getCode = () => {
@@ -535,6 +541,7 @@ function SourceCode() {
       case 'bot': return mainBotCode;
       case 'requirements': return requirementsTxt;
       case 'env': return envExample;
+      case 'setup': return setupInstructions;
     }
   };
 
@@ -543,6 +550,7 @@ function SourceCode() {
       case 'bot': return 'python';
       case 'requirements': return 'text';
       case 'env': return 'env';
+      case 'setup': return 'markdown';
     }
   };
 
@@ -560,10 +568,10 @@ function SourceCode() {
             Source Code
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-            Clean, documented code
+            Modular architecture
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Production-ready Python code with comprehensive comments, error handling, and modular design.
+            7 clean modules: bot.py, config.py, scraper.py, data_manager.py, embed_builder.py, views.py, commands.py, i18n.py
           </p>
         </motion.div>
 
@@ -572,7 +580,6 @@ function SourceCode() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          {/* Tab bar */}
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-4 w-fit">
             {tabs.map((tab) => (
               <button
@@ -584,26 +591,16 @@ function SourceCode() {
                     : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                <tab.icon size={14} />
                 <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Code display */}
           <CodeBlock code={getCode()} language={getLanguage()} />
         </motion.div>
       </div>
     </section>
   );
-}
-
-function FileCodeIcon({ size }: { size: number }) {
-  return <Code2 size={size} />;
-}
-
-function ListIcon({ size }: { size: number }) {
-  return <Server size={size} />;
 }
 
 // ─── Setup Section ───────────────────────────────────────────────────────────
@@ -612,27 +609,27 @@ function Setup() {
   const steps = [
     {
       number: '01',
-      title: 'Clone & Install',
-      description: 'Clone the repository and install Python dependencies.',
+      title: 'Install Dependencies',
+      description: 'Install all required Python packages.',
       code: 'pip install -r requirements.txt',
     },
     {
       number: '02',
       title: 'Configure Environment',
-      description: 'Create a .env file with your Discord bot token and server settings.',
-      code: 'cp .env.example .env\n# Edit .env with your values',
+      description: 'Create .env with your Discord bot token.',
+      code: 'cp .env.example .env\n# Edit .env with your token',
     },
     {
       number: '03',
       title: 'Create Discord Bot',
-      description: 'Create a bot at discord.com/developers and invite it to your server with appropriate permissions.',
-      code: '# Required permissions:\n# - Send Messages\n# - Embed Links\n# - Manage Roles\n# - Use Slash Commands',
+      description: 'Set up at discord.com/developers with required intents and permissions.',
+      code: '# Required intents:\n# - MESSAGE CONTENT\n# - SERVER MEMBERS\n# Required perms:\n# - Send Messages, Embed Links\n# - Manage Roles, Slash Commands',
     },
     {
       number: '04',
-      title: 'Run the Bot',
-      description: 'Start the bot and use /setup to initialize the vote tracker in your channel.',
-      code: 'python bot.py\n# Then in Discord: /setup',
+      title: 'Run & Setup',
+      description: 'Start the bot and use /voteparty setup to post the tracker.',
+      code: 'python bot.py\n# Then in Discord:\n# /voteparty setup',
     },
   ];
 
@@ -647,13 +644,13 @@ function Setup() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-gray-400 text-xs font-medium mb-4">
             <Terminal size={12} />
-            Setup Guide
+            Quick Setup
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
             Get started in minutes
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Four simple steps to get your vote party tracker running.
+            Four simple steps to get your premium vote party tracker running.
           </p>
         </motion.div>
 
@@ -688,28 +685,52 @@ function Setup() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          className="mt-12 grid md:grid-cols-2 gap-4"
         >
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <MessageSquare size={18} className="text-yellow-400" />
-            Slash Commands
-          </h3>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              { cmd: '/setup', desc: 'Initialize vote tracker in channel' },
-              { cmd: '/setremaining', desc: 'Manually set remaining votes' },
-              { cmd: '/reset', desc: 'Reset vote cycle baseline' },
-              { cmd: '/forceupdate', desc: 'Force immediate scrape update' },
-              { cmd: '/status', desc: 'Show current bot status' },
-              { cmd: '/help', desc: 'Show all available commands' },
-            ].map((item) => (
-              <div key={item.cmd} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02]">
-                <code className="text-xs font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded">
-                  {item.cmd}
-                </code>
-                <span className="text-xs text-gray-500">{item.desc}</span>
-              </div>
-            ))}
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Users size={18} className="text-yellow-400" />
+              User Commands
+            </h3>
+            <div className="space-y-2">
+              {[
+                { cmd: '/link <ign>', desc: 'Link your Minecraft username' },
+                { cmd: '/myvotes', desc: 'View your personal vote stats' },
+                { cmd: '/leaderboard', desc: 'View the vote leaderboard' },
+                { cmd: '/stats', desc: 'View vote party statistics' },
+                { cmd: '/language', desc: 'Set EN/ES preference' },
+              ].map((item) => (
+                <div key={item.cmd} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
+                  <code className="text-xs font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded">
+                    {item.cmd}
+                  </code>
+                  <span className="text-xs text-gray-500">{item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Shield size={18} className="text-blue-400" />
+              Admin Commands
+            </h3>
+            <div className="space-y-2">
+              {[
+                { cmd: '/voteparty setup', desc: 'Post/update tracker embed' },
+                { cmd: '/voteparty setremaining', desc: 'Set remaining votes' },
+                { cmd: '/voteparty setbaseline', desc: 'Reset cycle baseline' },
+                { cmd: '/voteparty forceupdate', desc: 'Force immediate update' },
+                { cmd: '/voteparty reset', desc: 'Reset all progress' },
+              ].map((item) => (
+                <div key={item.cmd} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
+                  <code className="text-xs font-mono text-blue-400 bg-blue-400/10 px-2 py-1 rounded">
+                    {item.cmd}
+                  </code>
+                  <span className="text-xs text-gray-500">{item.desc}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </div>
@@ -730,11 +751,11 @@ function Footer() {
             </div>
             <div>
               <div className="text-sm font-semibold text-white">Colombia Vote Party Bot</div>
-              <div className="text-xs text-gray-500">DiplomaticaMC • Colombia Nation</div>
+              <div className="text-xs text-gray-500">Premium Edition • DiplomaticaMC</div>
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <span className="text-xs text-gray-600">Built with Python & discord.py</span>
+            <span className="text-xs text-gray-600">Modular Python • discord.py • 7 modules</span>
             <div className="flex items-center gap-1">
               <span className="text-xs text-gray-600">🇨🇴</span>
               <span className="text-xs text-gray-500">Made for Colombia</span>
