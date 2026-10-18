@@ -128,6 +128,9 @@ class BotData:
             "last_scrape_time": None,
             "ping_message_id": None,
             "ping_timestamp": None,
+            "last_vote_party_time": None,
+            "vote_history": [],  # Track vote counts over time for rate calculation
+            "cycle_start_votes": {},  # Track votes at start of each cycle per site
         }
 
     def save(self):
@@ -218,6 +221,30 @@ class BotData:
     @ping_timestamp.setter
     def ping_timestamp(self, value: Optional[float]):
         self.data["ping_timestamp"] = value
+
+    @property
+    def last_vote_party_time(self) -> Optional[str]:
+        return self.data.get("last_vote_party_time")
+
+    @last_vote_party_time.setter
+    def last_vote_party_time(self, value: Optional[str]):
+        self.data["last_vote_party_time"] = value
+
+    @property
+    def vote_history(self) -> list:
+        return self.data.get("vote_history", [])
+
+    @vote_history.setter
+    def vote_history(self, value: list):
+        self.data["vote_history"] = value
+
+    @property
+    def cycle_start_votes(self) -> dict:
+        return self.data.get("cycle_start_votes", {})
+
+    @cycle_start_votes.setter
+    def cycle_start_votes(self, value: dict):
+        self.data["cycle_start_votes"] = value
 
 
 # ─── Web Scraper ──────────────────────────────────────────────────────────────
@@ -436,39 +463,91 @@ class EmbedBuilder:
         """
         if remaining <= 0:
             return "🎉 **Vote Party Complete!**"
-        elif remaining <= 30:
-            return "🔥 **Final push! Almost there!**"
+        elif remaining <= 25:
+            return "🚨 **FINAL PUSH! Almost there!**"
         elif remaining <= 50:
-            return "⚡ **Getting close! Keep voting!**"
+            return "🔥 **Almost there! Keep going!**"
         elif remaining <= 100:
-            return "💪 **Good progress! Don't stop!**"
+            return "⚡ **Getting close! Don't stop!**"
+        elif remaining <= 150:
+            return "💪 **Good progress! Keep it up!**"
         else:
-            return "✅ **All good! Let's get started!**"
+            return "✅ **Just getting started! Let's go!**"
 
     @staticmethod
     def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
         """
-        Build a visually appealing progress bar using colored emoji squares.
-        More vibrant and eye-catching than unicode blocks.
+        Build a visually appealing progress bar with milestone markers.
         """
         filled = int(percentage / (100 / length))
         empty = length - filled
         
         # Use colored squares based on the accent color
         if color == COLOR_RED:
-            return "🟥" * filled + "⬜" * empty
+            bar = "🟥" * filled + "⬜" * empty
         elif color == COLOR_BLUE:
-            return "🟦" * filled + "⬜" * empty
+            bar = "🟦" * filled + "⬜" * empty
         else:  # Yellow
-            return "🟨" * filled + "⬜" * empty
+            bar = "🟨" * filled + "⬜" * empty
+        
+        # Add milestone markers
+        markers = []
+        if percentage >= 50:
+            markers.append("50%✓")
+        if percentage >= 75:
+            markers.append("75%✓")
+        
+        if markers:
+            bar += f" {'|'.join(markers)}"
+        
+        return bar
 
     @staticmethod
-    def format_site_count(name: str, count: Optional[int]) -> str:
-        """Format individual site vote count with visual indicator."""
+    def format_site_count(name: str, count: Optional[int], cycle_start: Optional[int] = None, emoji: str = "▸") -> str:
+        """Format individual site vote count with contribution tracking."""
         if count is not None:
-            return f"▸ **{name}** — {count} votes"
+            if cycle_start is not None:
+                contribution = count - cycle_start
+                if contribution > 0:
+                    return f"{emoji} **{name}** — {count:,} **(+{contribution})**"
+                else:
+                    return f"{emoji} **{name}** — {count:,} (+0)"
+            else:
+                return f"{emoji} **{name}** — {count:,}"
         else:
-            return f"▸ **{name}** — ⚠️ Unavailable"
+            return f"{emoji} **{name}** — ⚠️ Unavailable"
+
+    @staticmethod
+    def estimate_completion(vote_history: list, remaining: int) -> Optional[str]:
+        """Estimate time to completion based on voting rate."""
+        if len(vote_history) < 2:
+            return None
+        
+        # Calculate votes per minute from history
+        recent = vote_history[-10:]  # Last 10 data points
+        if len(recent) < 2:
+            return None
+        
+        first_time = recent[0]["timestamp"]
+        first_votes = recent[0]["total"]
+        last_time = recent[-1]["timestamp"]
+        last_votes = recent[-1]["total"]
+        
+        time_diff = last_time - first_time
+        vote_diff = last_votes - first_votes
+        
+        if time_diff <= 0 or vote_diff <= 0:
+            return None
+        
+        votes_per_second = vote_diff / time_diff
+        seconds_to_complete = remaining / votes_per_second
+        
+        if seconds_to_complete < 60:
+            return f"~{int(seconds_to_complete)}s"
+        elif seconds_to_complete < 3600:
+            return f"~{int(seconds_to_complete / 60)}m"
+        else:
+            return f"~{seconds_to_complete / 3600:.1f}h"
 
     @staticmethod
     def build(
@@ -476,6 +555,9 @@ class EmbedBuilder:
         site_counts: dict[str, Optional[int]],
         last_updated: Optional[str],
         last_scrape_time: Optional[float] = None,
+        vote_history: Optional[list] = None,
+        cycle_start_votes: Optional[dict] = None,
+        last_vote_party_time: Optional[str] = None,
     ) -> discord.Embed:
         """
         Build a premium vote party tracker embed with modern design.
@@ -488,6 +570,11 @@ class EmbedBuilder:
         # Build visual elements
         bar = EmbedBuilder.build_progress_bar(percentage, color)
         status_line = EmbedBuilder.get_status_line(remaining)
+        
+        # Estimate completion time
+        completion_estimate = None
+        if vote_history:
+            completion_estimate = EmbedBuilder.estimate_completion(vote_history, remaining)
 
         # Create embed with dynamic accent color
         embed = discord.Embed(
@@ -502,68 +589,77 @@ class EmbedBuilder:
         # Build premium description with clear sections
         if remaining <= 0:
             embed.description = (
-                f"## 🎉 **Vote Party Complete!**\n"
+                f"# 🎉 **Vote Party Complete!**\n"
                 f"Starting new cycle...\n\n"
                 f"{bar} **100.0%**"
             )
         else:
-            # Header section with big number
+            # Header section with HUGE number
             embed.description = (
-                f"# **{remaining}** votes to go\n\n"
+                f"# **{remaining}** votes remaining\n\n"
                 f"{bar} **{percentage:.1f}%**\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected\n\n"
+                f"**{progress}** / {VOTE_GOAL} votes collected"
             )
             
-            # Status message with styled box
+            # Add completion estimate if available
+            if completion_estimate:
+                embed.description += f"\n⏱️ Est. completion: **{completion_estimate}**"
+            
+            embed.description += "\n\n"
+            
+            # Status message with quote block for emphasis
             embed.description += f"> {status_line}"
 
         # Add separator
         embed.description += "\n\n━━━━━━━━━━━━━━━━━━━━"
 
-        # Individual site votes - clean, organized format
+        # Individual site votes with contribution tracking and color-coded emojis
         site_lines = []
-        for site in VOTE_SITES:
+        site_emojis = ["🟡", "🔵", "🟢"]  # Color-coded for each site
+        for i, site in enumerate(VOTE_SITES):
             name = site["name"]
             count = site_counts.get(name)
-            if count is not None:
-                site_lines.append(f"▸ **{name}** — **{count}** votes")
-            else:
-                site_lines.append(f"▸ **{name}** — ⚠️ Unavailable")
+            cycle_start = cycle_start_votes.get(name) if cycle_start_votes else None
+            emoji = site_emojis[i % len(site_emojis)]
+            site_lines.append(EmbedBuilder.format_site_count(name, count, cycle_start, emoji))
 
-        # Vote links - numbered
+        # Vote links with better formatting
         links = []
         for i, site in enumerate(VOTE_SITES, 1):
-            links.append(f"{i}. [Vote on {site['name']}]({site['url']})")
+            links.append(f"**{i}.** [Vote on {site['name']}]({site['url']})")
 
         # Vote counts and links stacked vertically
         embed.add_field(
-            name="🗳️ Vote Counts",
+            name="🗳️ **Vote Counts**",
             value="\n".join(site_lines) if site_lines else "No data yet",
             inline=False,
         )
+        
         embed.add_field(
-            name="🔗 Vote Now",
+            name="🔗 **Vote Now!**\n━━━━━━━━━━━━━━━━",
             value="\n".join(links),
             inline=False,
         )
 
-        # Footer with timestamp
+        # Footer with last VP time and update info
+        footer_parts = []
+        if last_vote_party_time:
+            footer_parts.append(f"Last VP: {last_vote_party_time}")
+        
         if last_updated and last_scrape_time:
             try:
                 dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
-                
-                # Set embed timestamp (Discord shows this as relative time)
                 embed.timestamp = dt
-                
-                # Simple footer text
-                embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_SECONDS} seconds")
             except ValueError:
-                embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
-        elif last_updated:
-            embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+                pass
+        
+        footer_parts.append(f"Updates every {SCRAPE_INTERVAL_SECONDS}s")
+        
+        if footer_parts:
+            embed.set_footer(text=" • ".join(footer_parts))
         else:
-            embed.set_footer(text="⏱️ Waiting for first update...")
+            embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_SECONDS} seconds")
 
         return embed
 
@@ -711,11 +807,22 @@ class VotePartyBot(commands.Bot):
             # Check if vote party is complete
             if remaining <= 0:
                 logger.info(f"🎉 Vote party complete! Total: {total}")
+                # Record when this vote party completed
+                now = datetime.now(timezone.utc)
+                self.bot_data.last_vote_party_time = now.strftime("%Y-%m-%d %H:%M")
+                
                 # Reset for next cycle
                 baseline = total
                 remaining = VOTE_GOAL
                 self.bot_data.baseline = baseline
                 self.bot_data.has_ping_sent = False
+                
+                # Store current counts as cycle start for contribution tracking
+                self.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
+                
+                # Clear vote history for new cycle
+                self.bot_data.vote_history = []
+                
                 # Clean up any existing ping message
                 self.bot_data.ping_message_id = None
                 self.bot_data.ping_timestamp = None
@@ -727,6 +834,16 @@ class VotePartyBot(commands.Bot):
             self.bot_data.site_counts = counts
             self.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot_data.last_scrape_time = now.timestamp()
+            
+            # Add to vote history (keep last 100 entries)
+            self.bot_data.vote_history.append({
+                "timestamp": now.timestamp(),
+                "total": total,
+                "counts": counts
+            })
+            if len(self.bot_data.vote_history) > 100:
+                self.bot_data.vote_history = self.bot_data.vote_history[-100:]
+            
             self.bot_data.save()
 
             # Update the embed
@@ -750,6 +867,9 @@ class VotePartyBot(commands.Bot):
                 site_counts=self.bot_data.site_counts,
                 last_updated=self.bot_data.last_updated,
                 last_scrape_time=self.bot_data.last_scrape_time,
+                vote_history=self.bot_data.vote_history,
+                cycle_start_votes=self.bot_data.cycle_start_votes,
+                last_vote_party_time=self.bot_data.last_vote_party_time,
             )
 
             view = VoteNotifyView()
@@ -851,6 +971,9 @@ class VotePartyCog(commands.Cog):
                     site_counts=self.bot.bot_data.site_counts,
                     last_updated=self.bot.bot_data.last_updated,
                     last_scrape_time=self.bot.bot_data.last_scrape_time,
+                    vote_history=self.bot.bot_data.vote_history,
+                    cycle_start_votes=self.bot.bot_data.cycle_start_votes,
+                    last_vote_party_time=self.bot.bot_data.last_vote_party_time,
                 )
                 view = VoteNotifyView()
                 await self.bot.tracker_message.edit(embed=embed, view=view)
@@ -867,6 +990,9 @@ class VotePartyCog(commands.Cog):
             site_counts=self.bot.bot_data.site_counts,
             last_updated=self.bot.bot_data.last_updated,
             last_scrape_time=self.bot.bot_data.last_scrape_time,
+            vote_history=self.bot.bot_data.vote_history,
+            cycle_start_votes=self.bot.bot_data.cycle_start_votes,
+            last_vote_party_time=self.bot.bot_data.last_vote_party_time,
         )
         view = VoteNotifyView()
 
@@ -958,6 +1084,13 @@ class VotePartyCog(commands.Cog):
             self.bot.bot_data.has_ping_sent = False
             self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot.bot_data.last_scrape_time = now.timestamp()
+            
+            # Store current counts as cycle start for contribution tracking
+            self.bot.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
+            
+            # Clear vote history for new cycle
+            self.bot.bot_data.vote_history = []
+            
             self.bot.bot_data.save()
 
             await self.bot._update_embed()
