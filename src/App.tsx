@@ -765,18 +765,10 @@ function Footer() {
         </p>
         <div className="flex flex-wrap justify-center gap-4 mb-6">
           <a
-            href="https://railway.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors text-sm font-semibold"
-          >
-            🚀 Deploy on Railway
-          </a>
-          <a
-            href="QUICKSTART.md"
+            href="WISPBYTE_SETUP.md"
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-semibold"
           >
-            📖 Quick Start Guide
+            📖 WispByte Setup Guide
           </a>
         </div>
         <div className="flex flex-wrap justify-center gap-6">
