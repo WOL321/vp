@@ -415,15 +415,15 @@ class EmbedBuilder:
 
         # Create embed with dynamic accent color
         embed = discord.Embed(
-            title="🇨🇴 Colombia Vote Party Tracker",
+            title="🇨🇴 Colombia Vote Party",
+            description="",
             color=color,
         )
         
-        # Add premium visual elements
-        embed.set_image(url=BANNER_URL)
+        # Add thumbnail for branding
         embed.set_thumbnail(url=THUMBNAIL_URL)
 
-        # Main content area - BIG number with "votes to go" callout
+        # Build premium description with clear sections
         if remaining <= 0:
             embed.description = (
                 f"## 🎉 **Vote Party Complete!**\\n"
@@ -431,25 +431,28 @@ class EmbedBuilder:
                 f"{bar} **100.0%**"
             )
         else:
-            votes_to_go = remaining
+            # Header section with big number
             embed.description = (
-                f"# **{remaining}** votes remaining\\n"
-                f"to reach **{VOTE_GOAL}!**\\n\\n"
+                f"# **{remaining}** votes to go\\n\\n"
                 f"{bar} **{percentage:.1f}%**\\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected\\n"
-                f"**{votes_to_go}** more votes to go!\\n\\n"
-                f"{status_line}"
+                f"**{progress}** / {VOTE_GOAL} votes collected\\n\\n"
             )
+            
+            # Status message with styled box
+            embed.description += f"> {status_line}"
 
-        # Divider for visual separation
-        embed.add_field(name="\\u200b", value="\\u200b", inline=False)
+        # Add separator
+        embed.description += "\\n\\n━━━━━━━━━━━━━━━━━━━━"
 
         # Individual site votes - clean, organized format
         site_lines = []
         for site in VOTE_SITES:
             name = site["name"]
             count = site_counts.get(name)
-            site_lines.append(EmbedBuilder.format_site_count(name, count))
+            if count is not None:
+                site_lines.append(f"▸ **{name}** — **{count}** votes")
+            else:
+                site_lines.append(f"▸ **{name}** — ⚠️ Unavailable")
 
         # Vote links - numbered
         links = []
@@ -458,12 +461,12 @@ class EmbedBuilder:
 
         # Vote counts and links stacked vertically
         embed.add_field(
-            name="🗳️ **Vote Counts**",
+            name="🗳️ Vote Counts",
             value="\\n".join(site_lines) if site_lines else "No data yet",
             inline=False,
         )
         embed.add_field(
-            name="🔗 **Vote Now**",
+            name="🔗 Vote Now",
             value="\\n".join(links),
             inline=False,
         )
@@ -478,12 +481,9 @@ class EmbedBuilder:
                 # Calculate next update time (scrape interval in seconds)
                 next_update_unix = unix_timestamp + (SCRAPE_INTERVAL_MINUTES * 60)
 
-                # Absolute time formatted for Discord (shows in user's timezone)
-                abs_time = f"<t:{unix_timestamp}:t>"
-
-                # Footer: relative time • absolute time • next update countdown
+                # Footer: relative time • next update countdown
                 embed.set_footer(
-                    text=f"⏱️ Updated <t:{unix_timestamp}:R> • {abs_time} • Next update <t:{next_update_unix}:R>"
+                    text=f"⏱️ Updated <t:{unix_timestamp}:R> • Next update <t:{next_update_unix}:R>"
                 )
             except ValueError:
                 embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")

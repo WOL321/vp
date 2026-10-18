@@ -597,90 +597,155 @@ function EmbedPreview() {
               <div className="mt-0.5 flex">
                 {/* Accent bar */}
                 <div 
-                  className="w-1 shrink-0"
+                  className="w-1 shrink-0 rounded-l"
                   style={{ backgroundColor: current.color }}
                 />
                 
                 {/* Embed content */}
-                <div className="bg-[#2b2d31] rounded-r-sm px-4 py-3 flex-1">
-                  {/* Title */}
-                  <div className="text-white font-semibold mb-2">
-                    🇨🇴 Colombia Vote Party Tracker
+                <div className="bg-[#2b2d31] rounded-r-sm flex-1 overflow-hidden">
+                  {/* Header with gradient */}
+                  <div 
+                    className="px-5 py-4"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${current.color}15 0%, transparent 100%)`,
+                      borderBottom: `1px solid ${current.color}20`
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-white font-bold text-lg">
+                        🇨🇴 Colombia Vote Party
+                      </div>
+                      <div 
+                        className="text-xs font-bold px-2 py-1 rounded"
+                        style={{ 
+                          backgroundColor: `${current.color}20`,
+                          color: current.color
+                        }}
+                      >
+                        {percentage.toFixed(0)}% Complete
+                      </div>
+                    </div>
+                    
+                    {/* Big number */}
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span 
+                        className="text-5xl font-black"
+                        style={{ color: current.color }}
+                      >
+                        {current.remaining}
+                      </span>
+                      <span className="text-[#b5bac1] text-lg">
+                        votes to go
+                      </span>
+                    </div>
+
+                    {/* Modern progress bar */}
+                    <div className="relative h-2 bg-[#1e1f22] rounded-full overflow-hidden mb-2">
+                      <div 
+                        className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${percentage}%`,
+                          background: `linear-gradient(90deg, ${current.color}, ${current.color}dd)`,
+                          boxShadow: `0 0 10px ${current.color}60`
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-[#949ba4]">
+                      <span><span className="text-white font-semibold">{progress}</span> / 250 votes</span>
+                      <span className="font-semibold" style={{ color: current.color }}>{percentage.toFixed(1)}%</span>
+                    </div>
                   </div>
 
-                  {/* Description - BIG number with votes to go */}
-                  <div className="text-[#dbdee1] text-sm leading-relaxed mb-3">
-                    <div className="text-[2.25rem] font-extrabold text-white leading-none mb-1">
-                      {current.remaining} votes remaining
-                    </div>
-                    <div className="text-sm mb-2">
-                      to reach <span className="font-bold">250!</span>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="font-mono text-sm mb-1">
-                      <span style={{ color: current.color }}>
-                        {'▰'.repeat(filled)}
-                      </span>
-                      <span className="text-[#4e5058]">
-                        {'▱'.repeat(empty)}
-                      </span>{' '}
-                      <span className="font-bold text-white">{percentage.toFixed(1)}%</span>
-                    </div>
-
-                    <div className="text-xs text-[#b5bac1] mb-0.5">
-                      <span className="font-bold text-white">{progress}</span> / 250 votes collected
-                    </div>
-                    <div className="text-xs text-[#b5bac1] mb-2">
-                      <span className="font-bold text-white">{current.remaining}</span> more votes to go!
-                    </div>
-
-                    {/* Status */}
-                    <div className="text-sm font-bold" style={{ color: current.color }}>
+                  {/* Content sections */}
+                  <div className="px-5 py-4 space-y-4">
+                    {/* Status message */}
+                    <div 
+                      className="text-sm font-bold px-3 py-2 rounded"
+                      style={{ 
+                        backgroundColor: `${current.color}10`,
+                        color: current.color,
+                        border: `1px solid ${current.color}30`
+                      }}
+                    >
                       {current.status}
                     </div>
+
+                    {/* Vote Counts */}
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-2 flex items-center gap-2">
+                        <span>🗳️</span>
+                        <span>Vote Counts</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { name: 'Minecraft-MP', votes: 89 },
+                          { name: 'MinecraftServers.org', votes: 67 },
+                          { name: 'Minecraft-Server-List', votes: 47 },
+                        ].map((site) => (
+                          <div key={site.name} className="flex items-center justify-between text-sm bg-[#1e1f22] px-3 py-2 rounded">
+                            <span className="text-[#dbdee1] font-medium">{site.name}</span>
+                            <span className="font-bold text-white">{site.votes}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Vote Links */}
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-2 flex items-center gap-2">
+                        <span>🔗</span>
+                        <span>Vote Now</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { name: 'Minecraft-MP', url: 'https://minecraft-mp.com/server-s349345' },
+                          { name: 'MinecraftServers.org', url: 'https://minecraftservers.org/server/679302' },
+                          { name: 'Minecraft-Server-List', url: 'https://minecraft-server-list.com/server/513054/vote/' },
+                        ].map((site, i) => (
+                          <a 
+                            key={site.name}
+                            href={site.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-[#00a8fc] hover:text-[#00d4ff] hover:underline transition-colors group"
+                          >
+                            <span className="text-[#949ba4] group-hover:text-[#00a8fc] transition-colors">{i + 1}.</span>
+                            <span>Vote on {site.name}</span>
+                            <ExternalLink size={12} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Vote Counts field */}
-                  <div className="mt-3">
-                    <div className="text-white font-semibold text-sm mb-1">
-                      🗳️ Vote Counts
+                  {/* Footer */}
+                  <div 
+                    className="px-5 py-3 border-t"
+                    style={{ borderColor: `${current.color}20` }}
+                  >
+                    <div className="flex items-center gap-2 text-xs text-[#949ba4]">
+                      <Clock size={12} />
+                      <span>
+                        Updated <span className="text-white font-medium">{formatRelativeTime(lastUpdateSeconds)}</span>
+                      </span>
+                      <span className="text-[#4e5058]">•</span>
+                      <span>Next update in <span className="text-white font-medium">{formatCountdown(lastUpdateSeconds)}</span></span>
                     </div>
-                    <div className="text-sm text-[#dbdee1] space-y-0.5">
-                      <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
-                      <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
-                      <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
-                    </div>
-                  </div>
-
-                  {/* Vote Now field - numbered */}
-                  <div className="mt-3">
-                    <div className="text-white font-semibold text-sm mb-1">
-                      🔗 Vote Now
-                    </div>
-                    <div className="text-sm space-y-0.5">
-                      <div>1. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
-                      <div>2. <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
-                      <div>3. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
-                    </div>
-                  </div>
-
-                  {/* Footer - relative + absolute + next update */}
-                  <div className="mt-3 pt-2 border-t border-[#3f4147]">
-                    <span className="text-[0.6875rem] text-[#949ba4]">
-                      ⏱️ Updated {formatRelativeTime(lastUpdateSeconds)} • {new Date(Date.now() - lastUpdateSeconds * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} • Next update in {formatCountdown(lastUpdateSeconds)}
-                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Button */}
-              <div className="mt-2">
+              <div className="mt-3">
                 <button 
-                  className="text-white text-sm font-medium px-4 py-1.5 rounded-sm transition-all hover:opacity-90"
-                  style={{ backgroundColor: current.color }}
+                  className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded transition-all hover:scale-105"
+                  style={{ 
+                    backgroundColor: current.color,
+                    boxShadow: `0 4px 12px ${current.color}40`
+                  }}
                 >
-                  🔔 Get Notified
+                  <Bell size={14} />
+                  <span>Get Notified</span>
                 </button>
               </div>
             </div>
