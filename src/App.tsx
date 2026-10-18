@@ -35,6 +35,16 @@ function formatRelativeTime(seconds: number): string {
   return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 }
 
+// Helper function to format countdown to next update (every 3 minutes = 180 seconds)
+function formatCountdown(elapsedSeconds: number): string {
+  const SCRAPE_INTERVAL = 180; // 3 minutes in seconds
+  const remaining = Math.max(0, SCRAPE_INTERVAL - (elapsedSeconds % SCRAPE_INTERVAL));
+  if (remaining < 60) return `${remaining} seconds`;
+  const minutes = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  return `${minutes}m ${secs}s`;
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -565,9 +575,9 @@ function EmbedPreview() {
                     🇨🇴 Colombia Vote Party Tracker
                   </div>
 
-                  {/* Description */}
+                  {/* Description - BIG number with votes to go */}
                   <div className="text-[#dbdee1] text-sm leading-relaxed mb-3">
-                    <div className="text-[1.375rem] font-bold text-white leading-tight mb-0.5">
+                    <div className="text-[2.25rem] font-extrabold text-white leading-none mb-1">
                       {current.remaining} votes remaining
                     </div>
                     <div className="text-sm mb-2">
@@ -585,8 +595,11 @@ function EmbedPreview() {
                       <span className="font-bold text-white">{percentage.toFixed(1)}%</span>
                     </div>
 
-                    <div className="text-xs text-[#b5bac1] mb-2">
+                    <div className="text-xs text-[#b5bac1] mb-0.5">
                       <span className="font-bold text-white">{progress}</span> / 250 votes collected
+                    </div>
+                    <div className="text-xs text-[#b5bac1] mb-2">
+                      <span className="font-bold text-white">{current.remaining}</span> more votes to go!
                     </div>
 
                     {/* Status */}
@@ -595,34 +608,37 @@ function EmbedPreview() {
                     </div>
                   </div>
 
-                  {/* Vote Counts field */}
-                  <div className="mt-3">
-                    <div className="text-white font-semibold text-sm mb-1">
-                      🗳️ Vote Counts
+                  {/* Inline fields: Vote Counts + Vote Now side by side */}
+                  <div className="mt-3 grid grid-cols-2 gap-4">
+                    {/* Vote Counts field */}
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-1">
+                        🗳️ Vote Counts
+                      </div>
+                      <div className="text-sm text-[#dbdee1] space-y-0.5">
+                        <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
+                        <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
+                        <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
+                      </div>
                     </div>
-                    <div className="text-sm text-[#dbdee1] space-y-0.5">
-                      <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
-                      <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
-                      <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
+
+                    {/* Vote Now field - numbered */}
+                    <div>
+                      <div className="text-white font-semibold text-sm mb-1">
+                        🔗 Vote Now
+                      </div>
+                      <div className="text-sm space-y-0.5">
+                        <div>1. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
+                        <div>2. <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
+                        <div>3. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Vote Now field */}
-                  <div className="mt-3">
-                    <div className="text-white font-semibold text-sm mb-1">
-                      🔗 Vote Now
-                    </div>
-                    <div className="text-sm space-y-0.5">
-                      <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
-                      <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
-                      <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
+                  {/* Footer - relative + absolute + next update */}
                   <div className="mt-3 pt-2 border-t border-[#3f4147]">
                     <span className="text-[0.6875rem] text-[#949ba4]">
-                      ⏱️ Updated {formatRelativeTime(lastUpdateSeconds)}
+                      ⏱️ Updated {formatRelativeTime(lastUpdateSeconds)} • {new Date(Date.now() - lastUpdateSeconds * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} • Next update in {formatCountdown(lastUpdateSeconds)}
                     </span>
                   </div>
                 </div>
