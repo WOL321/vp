@@ -262,6 +262,9 @@ class VotePartyBot(commands.Bot):
             return
 
         try:
+            # Get total claimed votes from all players
+            claimed_votes = self.player_data.get_total_claimed_votes(cycle_only=True)
+            
             embed = EmbedBuilder.build(
                 remaining=self.bot_data.remaining,
                 site_counts=self.bot_data.site_counts,
@@ -271,6 +274,7 @@ class VotePartyBot(commands.Bot):
                 cycle_start_votes=self.bot_data.cycle_start_votes,
                 cycle_start_time=self.bot_data.cycle_start_time,
                 last_vote_party_time=self.bot_data.last_vote_party_time,
+                claimed_votes=claimed_votes,
             )
 
             view = VoteNotifyView(bot=self)

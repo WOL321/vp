@@ -162,6 +162,8 @@ class EmbedBuilder:
         cycle_start_time: Optional[float] = None,
         last_vote_party_time: Optional[str] = None,
         lang: str = "en",
+        claimed_votes: Optional[int] = None,
+        last_voter: Optional[str] = None,
     ) -> discord.Embed:
         """
         Build a premium vote party tracker embed with state-based design.
@@ -225,6 +227,12 @@ class EmbedBuilder:
                     embed.description += f"{emoji} {name} — **{count:,}**\n"
             else:
                 embed.description += f"{emoji} {name} — {t('unavailable', lang)}\n"
+
+        # Show claimed votes (self-reported)
+        if claimed_votes is not None and claimed_votes > 0:
+            embed.description += f"\n🗳️ **Claimed this cycle:** {claimed_votes} votes\n"
+            if last_voter:
+                embed.description += f"*Last voter: {last_voter}*\n"
 
         # Vote Now section
         embed.description += t("vote_now", lang) + "\n"
