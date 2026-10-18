@@ -627,42 +627,57 @@ function EmbedPreview() {
                 />
                 
                 {/* Embed content */}
-                <div className="bg-[#2b2d31] rounded-r-sm px-4 py-3 flex-1">
-                  {/* Title */}
-                  <div className="text-white font-semibold mb-2">
-                    🇨🇴 Colombia Vote Party Tracker
-                  </div>
-
-                  {/* Description - BIG number with votes to go */}
-                  <div className="text-[#dbdee1] text-sm leading-relaxed mb-3">
-                    <div className="text-[2.25rem] font-extrabold text-white leading-none mb-1">
-                      {current.remaining} votes remaining
-                    </div>
-                    <div className="text-sm mb-2">
-                      to reach <span className="font-bold">250!</span>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="font-mono text-sm mb-1">
-                      <span style={{ color: current.color }}>
-                        {'▰'.repeat(filled)}
-                      </span>
-                      <span className="text-[#4e5058]">
-                        {'▱'.repeat(empty)}
-                      </span>{' '}
-                      <span className="font-bold text-white">{percentage.toFixed(1)}%</span>
+                <div className="bg-[#2b2d31] rounded-r-sm flex-1 flex flex-col">
+                  {/* Banner image */}
+                  <img 
+                    src="https://image.qwenlm.ai/generated-images/a878ae01-bfa5-48ff-9074-517456b9dfb2/_result.png"
+                    alt="Colombia Vote Party Banner"
+                    className="w-full h-32 object-cover rounded-t-sm"
+                  />
+                  
+                  <div className="px-4 py-3 flex-1">
+                    {/* Title with thumbnail */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="text-white font-semibold flex-1">
+                        🇨🇴 Colombia Vote Party Tracker
+                      </div>
+                      {/* Thumbnail */}
+                      <img 
+                        src="https://cdn.discordapp.com/emojis/947652669680750613.webp"
+                        alt="Colombia"
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
                     </div>
 
-                    <div className="text-xs text-[#b5bac1] mb-0.5">
-                      <span className="font-bold text-white">{progress}</span> / 250 votes collected
-                    </div>
-                    <div className="text-xs text-[#b5bac1] mb-2">
-                      <span className="font-bold text-white">{current.remaining}</span> more votes to go!
-                    </div>
+                    {/* Description - BIG number with votes to go */}
+                    <div className="text-[#dbdee1] text-sm leading-relaxed mb-3">
+                      <div className="text-[2.25rem] font-extrabold text-white leading-none mb-1">
+                        {current.remaining} votes remaining
+                      </div>
+                      <div className="text-sm mb-2">
+                        to reach <span className="font-bold">250!</span>
+                      </div>
 
-                    {/* Status */}
-                    <div className="text-sm font-bold" style={{ color: current.color }}>
-                      {current.status}
+                      {/* Progress bar with emoji blocks */}
+                      <div className="text-lg mb-1 tracking-wide">
+                        {previewState === 'yellow' && '🟨'.repeat(Math.round(percentage / 10))}
+                        {previewState === 'blue' && '🟦'.repeat(Math.round(percentage / 10))}
+                        {previewState === 'red' && '🟥'.repeat(Math.round(percentage / 10))}
+                        {'⬜'.repeat(10 - Math.round(percentage / 10))}{' '}
+                        <span className="font-bold text-white text-sm">{percentage.toFixed(1)}%</span>
+                      </div>
+
+                      <div className="text-xs text-[#b5bac1] mb-0.5">
+                        <span className="font-bold text-white">{progress}</span> / 250 votes collected
+                      </div>
+                      <div className="text-xs text-[#b5bac1] mb-2">
+                        <span className="font-bold text-white">{current.remaining}</span> more votes to go!
+                      </div>
+
+                      {/* Status */}
+                      <div className="text-sm font-bold" style={{ color: current.color }}>
+                        {current.status}
+                      </div>
                     </div>
                   </div>
 

@@ -45,6 +45,10 @@ SCRAPE_INTERVAL_MINUTES = 3
 PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
+# Premium embed assets
+BANNER_URL = "https://image.qwenlm.ai/generated-images/a878ae01-bfa5-48ff-9074-517456b9dfb2/_result.png"
+THUMBNAIL_URL = "https://cdn.discordapp.com/emojis/947652669680750613.webp"  # Colombia flag emoji
+
 # Color thresholds for embed accent bar
 COLOR_YELLOW = 0xF1C40F  # Remaining > 50 (Early stage)
 COLOR_BLUE = 0x3498DB    # Remaining 31-50 (Mid stage)
@@ -366,14 +370,21 @@ class EmbedBuilder:
             return "✅ **All good! Let's get started!**"
 
     @staticmethod
-    def build_progress_bar(percentage: float, length: int = 20) -> str:
+    def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
         """
-        Build a visually appealing progress bar.
-        Uses Unicode block characters for a clean, modern look.
+        Build a visually appealing progress bar using colored emoji squares.
+        More vibrant and eye-catching than unicode blocks.
         """
         filled = int(percentage / (100 / length))
         empty = length - filled
-        return "▰" * filled + "▱" * empty
+        
+        # Use colored squares based on the accent color
+        if color == COLOR_RED:
+            return "🟥" * filled + "⬜" * empty
+        elif color == COLOR_BLUE:
+            return "🟦" * filled + "⬜" * empty
+        else:  # Yellow
+            return "🟨" * filled + "⬜" * empty
 
     @staticmethod
     def format_site_count(name: str, count: Optional[int]) -> str:
@@ -399,7 +410,7 @@ class EmbedBuilder:
         color = EmbedBuilder.get_color(remaining)
 
         # Build visual elements
-        bar = EmbedBuilder.build_progress_bar(percentage)
+        bar = EmbedBuilder.build_progress_bar(percentage, color)
         status_line = EmbedBuilder.get_status_line(remaining)
 
         # Create embed with dynamic accent color
@@ -407,6 +418,10 @@ class EmbedBuilder:
             title="🇨🇴 Colombia Vote Party Tracker",
             color=color,
         )
+        
+        # Add premium visual elements
+        embed.set_image(url=BANNER_URL)
+        embed.set_thumbnail(url=THUMBNAIL_URL)
 
         # Main content area - BIG number with "votes to go" callout
         if remaining <= 0:
