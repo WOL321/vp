@@ -344,6 +344,11 @@ function LiveTracker() {
   const [votes, setVotes] = useState(187);
   const [elapsed, setElapsed] = useState(0);
   const [lastUpdate, setLastUpdate] = useState(0);
+  const [siteVotes, setSiteVotes] = useState([
+    { name: 'Minecraft-Server-List', votes: 4491, online: true },
+    { name: 'TopG.org', votes: 1203, online: true },
+    { name: 'MinecraftServers.org', votes: 0, online: false },
+  ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -360,6 +365,14 @@ function LiveTracker() {
         const change = Math.random() > 0.5 ? 1 : 0;
         return Math.min(VOTE_GOAL, prev + change);
       });
+      // Simulate site vote count changes
+      setSiteVotes((prev) =>
+        prev.map((site) => {
+          if (!site.online) return site;
+          const delta = Math.floor(Math.random() * 5) - 1;
+          return { ...site, votes: Math.max(0, site.votes + delta) };
+        })
+      );
     }, 8000);
     return () => clearInterval(voteInterval);
   }, []);
@@ -451,18 +464,40 @@ function LiveTracker() {
                   </div>
                 </div>
 
-                {/* Stats grid */}
+                {/* Vote Sites Breakdown */}
+                <div className="space-y-1.5 mb-3">
+                  {siteVotes.map((site) => (
+                    <div
+                      key={site.name}
+                      className="flex items-center justify-between bg-[#2b2d31] rounded-lg px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            site.online ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]' : 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]'
+                          }`}
+                        />
+                        <span className="text-xs text-gray-300 font-medium">{site.name}</span>
+                      </div>
+                      <span className={`text-xs font-mono font-semibold ${site.online ? 'text-white' : 'text-gray-600 line-through'}`}>
+                        {site.online ? site.votes.toLocaleString() : 'Offline'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary stats */}
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="bg-[#2b2d31] rounded-lg p-2.5 text-center">
-                    <div className="text-lg font-bold text-white">{votes}</div>
+                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-white">{votes}</div>
                     <div className="text-[10px] text-gray-500">Votes</div>
                   </div>
-                  <div className="bg-[#2b2d31] rounded-lg p-2.5 text-center">
-                    <div className="text-lg font-bold text-white">{remaining}</div>
+                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-white">{remaining}</div>
                     <div className="text-[10px] text-gray-500">Remaining</div>
                   </div>
-                  <div className="bg-[#2b2d31] rounded-lg p-2.5 text-center">
-                    <div className="text-lg font-bold text-white">{Math.round(progress)}%</div>
+                  <div className="bg-[#2b2d31] rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-white">{Math.round(progress)}%</div>
                     <div className="text-[10px] text-gray-500">Complete</div>
                   </div>
                 </div>
