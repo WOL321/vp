@@ -463,21 +463,19 @@ class EmbedBuilder:
         """
         if remaining <= 0:
             return "🎉 **Vote Party Complete!**"
-        elif remaining <= 25:
-            return "🚨 **FINAL PUSH! Almost there!**"
-        elif remaining <= 50:
-            return "🔥 **Almost there! Keep going!**"
+        elif remaining <= 10:
+            return "🔥 **Almost there! Party imminent!**"
+        elif remaining <= 30:
+            return "⚡ **Getting close! Notify the server!**"
         elif remaining <= 100:
-            return "⚡ **Getting close! Don't stop!**"
-        elif remaining <= 150:
             return "💪 **Good progress! Keep it up!**"
         else:
-            return "✅ **Just getting started! Let's go!**"
+            return "🗳️ **Vote party in progress**"
 
     @staticmethod
     def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
         """
-        Build a visually appealing progress bar with milestone markers.
+        Build a visually appealing progress bar.
         """
         filled = int(percentage / (100 / length))
         empty = length - filled
@@ -489,16 +487,6 @@ class EmbedBuilder:
             bar = "🟦" * filled + "⬜" * empty
         else:  # Yellow
             bar = "🟨" * filled + "⬜" * empty
-        
-        # Add milestone markers
-        markers = []
-        if percentage >= 50:
-            markers.append("50%✓")
-        if percentage >= 75:
-            markers.append("75%✓")
-        
-        if markers:
-            bar += f" {'|'.join(markers)}"
         
         return bar
 
@@ -586,60 +574,43 @@ class EmbedBuilder:
         # Add thumbnail for branding
         embed.set_thumbnail(url=THUMBNAIL_URL)
 
-        # Build premium description with clear sections
+        # Build clean description format
         if remaining <= 0:
             embed.description = (
-                f"# 🎉 **Vote Party Complete!**\n"
+                f"🎉 **Vote Party Complete!**\n"
                 f"Starting new cycle...\n\n"
-                f"{bar} **100.0%**"
+                f"{bar} 100.0%\n"
+                f"{VOTE_GOAL} / {VOTE_GOAL} votes collected"
             )
         else:
-            # Header section with HUGE number
+            # Clean format matching user's example
             embed.description = (
-                f"# **{remaining}** votes remaining\n\n"
-                f"{bar} **{percentage:.1f}%**\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected"
+                f"**{remaining}** votes remaining\n"
+                f"{bar} {percentage:.1f}%\n"
+                f"{progress} / {VOTE_GOAL} votes collected\n\n"
+                f"{status_line}"
             )
-            
-            # Add completion estimate if available
-            if completion_estimate:
-                embed.description += f"\n⏱️ Est. completion: **{completion_estimate}**"
-            
-            embed.description += "\n\n"
-            
-            # Status message with quote block for emphasis
-            embed.description += f"> {status_line}"
 
-        # Add separator
-        embed.description += "\n\n━━━━━━━━━━━━━━━━━━━━"
+        # Add separator and vote counts section
+        embed.description += "\n\n━━━━━━━━━━━━━━━━━━━━\n"
+        embed.description += "🗳️ **Vote Counts**\n"
 
-        # Individual site votes with contribution tracking and color-coded emojis
-        site_lines = []
-        site_emojis = ["🟡", "🔵", "🟢"]  # Color-coded for each site
+        # Individual site votes with color-coded emojis
+        site_emojis = ["🟡", "🔷", "🔴"]  # Yellow, Dark Blue, Red for each site
         for i, site in enumerate(VOTE_SITES):
             name = site["name"]
             count = site_counts.get(name)
-            cycle_start = cycle_start_votes.get(name) if cycle_start_votes else None
             emoji = site_emojis[i % len(site_emojis)]
-            site_lines.append(EmbedBuilder.format_site_count(name, count, cycle_start, emoji))
+            if count is not None:
+                embed.description += f"{emoji} {name} — **{count:,}**\n"
+            else:
+                embed.description += f"{emoji} {name} — ⚠️ Unavailable\n"
 
-        # Vote links with better formatting
-        links = []
+        # Vote Now section with links
+        embed.description += "🔗 **Vote Now!**\n"
+        embed.description += "━━━━━━━━━━━━━━━━\n"
         for i, site in enumerate(VOTE_SITES, 1):
-            links.append(f"**{i}.** [Vote on {site['name']}]({site['url']})")
-
-        # Vote counts and links stacked vertically
-        embed.add_field(
-            name="🗳️ **Vote Counts**",
-            value="\n".join(site_lines) if site_lines else "No data yet",
-            inline=False,
-        )
-        
-        embed.add_field(
-            name="🔗 **Vote Now!**\n━━━━━━━━━━━━━━━━",
-            value="\n".join(links),
-            inline=False,
-        )
+            embed.description += f"{i}. [Vote on {site['name']}]({site['url']})\n"
 
         # Footer with last VP time and update info
         footer_parts = []
