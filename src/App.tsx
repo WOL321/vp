@@ -416,104 +416,99 @@ function LiveTracker() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-lg mx-auto"
+          className="max-w-2xl mx-auto"
         >
-          {/* Discord embed mockup */}
-          <div className="rounded-2xl bg-[#2b2d31] border border-white/[0.06] overflow-hidden shadow-2xl shadow-black/50">
+          {/* Discord embed mockup - wide format like real Discord */}
+          <div className="rounded-xl bg-[#313338] border border-white/[0.04] overflow-hidden shadow-2xl shadow-black/50">
             {/* Discord message header */}
-            <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+            <div className="px-5 pt-5 pb-1 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Bot size={18} className="text-black" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">VoteParty Bot</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#5865f2] text-white font-medium">BOT</span>
-                </div>
-                <span className="text-xs text-gray-500">Today at {timeStr}</span>
-              </div>
-            </div>
-
-            {/* Embed content */}
-            <div className="mx-4 mb-4 rounded-lg overflow-hidden bg-[#1e1f22] border-l-4 border-yellow-400">
-              <div className="p-4 font-mono text-[13px] leading-[1.8]">
-                {/* Title */}
-                <div className="text-white font-bold text-sm mb-1">
-                  🇨🇴 Colombia Vote Party
+                  <span className="text-[15px] font-semibold text-white">VoteParty Bot</span>
+                  <span className="px-1 py-0.5 rounded text-[10px] bg-[#5865f2] text-white font-medium">BOT</span>
+                  <span className="text-xs text-gray-500">Today at {timeStr}</span>
                 </div>
 
-                {/* Remaining */}
-                <div className="text-gray-300 mb-1">
-                  <span className="font-semibold text-white">{remaining}</span> votes remaining
-                </div>
-
-                {/* Progress bar */}
-                <div className="text-[12px] tracking-wider mb-0.5">
-                  {progressBar} <span className="text-gray-400">{progress.toFixed(1)}%</span>
-                </div>
-
-                {/* Votes collected */}
-                <div className="text-gray-400 text-[12px] mb-2">
-                  {votes} / {VOTE_GOAL} votes collected
-                </div>
-
-                {/* Motivational */}
-                <div className="text-gray-300 text-[12px] mb-3">
-                  {getMotivational()}
-                </div>
-
-                {/* Divider */}
-                <div className="text-gray-600 text-[12px] mb-2 select-none">
-                  ━━━━━━━━━━━━━━━━━━━━
-                </div>
-
-                {/* Vote Counts header */}
-                <div className="text-gray-300 text-[12px] mb-1.5">
-                  🗳️ Vote Counts
-                </div>
-
-                {/* Site votes */}
-                <div className="space-y-0.5 mb-2">
-                  {siteVotes.map((site) => (
-                    <div key={site.name} className="text-[12px]">
-                      <span>{site.dot}</span>{' '}
-                      <span className="text-gray-300">{site.name}</span>{' '}
-                      <span className="text-gray-500">—</span>{' '}
-                      <span className="text-white font-semibold">{site.votes.toLocaleString()}</span>
+                {/* Embed - wide rectangle with left accent border */}
+                <div className="mt-2 rounded-md overflow-hidden bg-[#2b2d31] border-l-[3px] border-yellow-400">
+                  <div className="px-4 py-3">
+                    {/* Title */}
+                    <div className="text-white font-bold text-[15px] mb-2">
+                      🇨🇴 Colombia Vote Party
                     </div>
-                  ))}
-                </div>
 
-                {/* Vote Now header */}
-                <div className="text-yellow-400 text-[12px] font-semibold mb-1">
-                  🔗 Vote Now!
-                </div>
-
-                {/* Vote links */}
-                <div className="space-y-0.5 mb-3">
-                  {siteVotes.map((site, i) => (
-                    <div key={site.name} className="text-[12px] text-[#00aff4] hover:underline cursor-pointer">
-                      {i + 1}. Vote on {site.name}
+                    {/* Remaining */}
+                    <div className="text-[#dbdee1] text-[14px] mb-0.5">
+                      <span className="font-semibold text-white">{remaining}</span> votes remaining
                     </div>
-                  ))}
-                </div>
 
-                {/* Divider */}
-                <div className="text-gray-600 text-[12px] mb-1 select-none">
-                  ━━━━━━━━━━━━━━━━
-                </div>
+                    {/* Progress bar */}
+                    <div className="text-[13px] tracking-wider mb-0.5 font-sans">
+                      {progressBar} <span className="text-[#949ba4]">{progress.toFixed(1)}%</span>
+                    </div>
 
-                {/* Footer */}
-                <div className="text-gray-500 text-[11px]">
-                  Updates every 15s • Today at {timeStr}
+                    {/* Votes collected */}
+                    <div className="text-[#949ba4] text-[13px] mb-2">
+                      {votes} / {VOTE_GOAL} votes collected
+                    </div>
+
+                    {/* Motivational */}
+                    <div className="text-[#dbdee1] text-[13px]">
+                      {getMotivational()}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="text-[#4e5058] text-[13px] mt-2 mb-1.5 select-none leading-none">
+                      ━━━━━━━━━━━━━━━━━━━━
+                    </div>
+
+                    {/* Vote Counts header */}
+                    <div className="text-[#dbdee1] text-[13px] font-semibold mb-1">
+                      🗳️ Vote Counts
+                    </div>
+
+                    {/* Site votes */}
+                    <div className="space-y-0.5 mb-2">
+                      {siteVotes.map((site) => (
+                        <div key={site.name} className="text-[13px] leading-relaxed">
+                          <span>{site.dot}</span>{' '}
+                          <span className="text-[#dbdee1]">{site.name}</span>{' '}
+                          <span className="text-[#6d6f78]">—</span>{' '}
+                          <span className="text-white font-semibold">{site.votes.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Vote Now header */}
+                    <div className="text-[#dbdee1] text-[13px] font-semibold mb-1">
+                      🔗 Vote Now!
+                    </div>
+
+                    {/* Vote links */}
+                    <div className="space-y-0.5 mb-2">
+                      {siteVotes.map((site, i) => (
+                        <div key={site.name} className="text-[13px] text-[#00a8fc] hover:underline cursor-pointer leading-relaxed">
+                          {i + 1}. Vote on {site.name}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="text-[#6d6f78] text-[11px] mt-2 flex items-center gap-1">
+                      <span>Updates every 15s • Today at {timeStr}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Notification button */}
-            <div className="px-4 pb-4">
-              <button className="w-full py-2 rounded-lg bg-[#4e5058] hover:bg-[#6d6f78] text-white text-xs font-medium transition-colors flex items-center justify-center gap-2">
-                <Bell size={12} />
+            {/* Notification button - Discord component style */}
+            <div className="px-5 pb-4 pt-1 pl-[72px]">
+              <button className="py-1.5 px-4 rounded-sm bg-[#4e5058] hover:bg-[#6d6f78] text-white text-[13px] font-medium transition-colors flex items-center gap-2">
+                <Bell size={14} />
                 Get Notified When Close
               </button>
             </div>

@@ -88,8 +88,6 @@ VOTE_SITES = [
         ],
         "fallback_patterns": [
             r"(\\d+) Players have voted for this server in",
-        ],
-    },
             r"(\\d+)\\s*votes?\\s*(this\\s*month|monthly)",
             r"Monthly:\\s*(\\d+)",
             r"(\\d+)\\s*votes?",
@@ -447,14 +445,14 @@ class EmbedBuilder:
         """
         if remaining <= 0:
             return "🎉 **Vote Party Complete!**"
+        elif remaining <= 10:
+            return "🔥 **Almost there! Party imminent!**"
         elif remaining <= 30:
-            return "🔥 **Final push! Almost there!**"
-        elif remaining <= 50:
-            return "⚡ **Getting close! Keep voting!**"
+            return "⚡ **Getting close! Notify the server!**"
         elif remaining <= 100:
-            return "💪 **Good progress! Don't stop!**"
+            return "💪 **Good progress! Keep it up!**"
         else:
-            return "✅ **All good! Let's get started!**"
+            return "🗳️ **Vote party in progress**"
 
     @staticmethod
     def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
@@ -473,13 +471,21 @@ class EmbedBuilder:
         else:  # Yellow
             return "🟨" * filled + "⬜" * empty
 
+    # Color-coded dot indicators for each vote site
+    SITE_DOTS = {
+        "Minecraft-MP": "🟡",
+        "MinecraftServers.org": "🔷",
+        "Minecraft-Server-List": "🔴",
+    }
+
     @staticmethod
     def format_site_count(name: str, count: Optional[int]) -> str:
-        """Format individual site vote count with visual indicator."""
+        """Format individual site vote count with colored dot indicator."""
+        dot = EmbedBuilder.SITE_DOTS.get(name, "⚪")
         if count is not None:
-            return f"▸ **{name}** — {count} votes"
+            return f"{dot} {name} — {count:,}"
         else:
-            return f"▸ **{name}** — ⚠️ Unavailable"
+            return f"{dot} {name} — ⚠️ Unavailable"
 
     @staticmethod
     def build(
@@ -506,75 +512,61 @@ class EmbedBuilder:
             description="",
             color=color,
         )
-        
-        # Add thumbnail for branding
-        embed.set_thumbnail(url=THUMBNAIL_URL)
 
-        # Build premium description with clear sections
+        # Build description in the clean text format
         if remaining <= 0:
             embed.description = (
-                f"## 🎉 **Vote Party Complete!**\\n"
+                f"🎉 **Vote Party Complete!**\\n"
                 f"Starting new cycle...\\n\\n"
-                f"{bar} **100.0%**"
+                f"{bar} **100.0%**\\n"
+                f"{VOTE_GOAL} / {VOTE_GOAL} votes collected"
             )
         else:
-            # Header section with big number
+            # Header section
             embed.description = (
-                f"# **{remaining}** votes to go\\n\\n"
-                f"{bar} **{percentage:.1f}%**\\n"
-                f"**{progress}** / {VOTE_GOAL} votes collected\\n\\n"
+                f"**{remaining}** votes remaining\\n"
+                f"{bar} {percentage:.1f}%\\n"
+                f"{progress} / {VOTE_GOAL} votes collected\\n\\n"
+                f"{status_line}"
             )
-            
-            # Status message with styled box
-            embed.description += f"> {status_line}"
 
-        # Add separator
-        embed.description += "\\n\\n━━━━━━━━━━━━━━━━━━━━"
+        # Separator + vote counts section
+        embed.description += "\\n\\n━━━━━━━━━━━━━━━━━━━━\\n"
+        embed.description += "🗳️ **Vote Counts**\\n"
 
-        # Individual site votes - clean, organized format
+        # Individual site votes with colored dots
         site_lines = []
         for site in VOTE_SITES:
             name = site["name"]
             count = site_counts.get(name)
+            dot = EmbedBuilder.SITE_DOTS.get(name, "⚪")
             if count is not None:
-                site_lines.append(f"▸ **{name}** — **{count}** votes")
+                site_lines.append(f"{dot} {name} — **{count:,}**")
             else:
-                site_lines.append(f"▸ **{name}** — ⚠️ Unavailable")
+                site_lines.append(f"{dot} {name} — ⚠️ Unavailable")
 
-        # Vote links - numbered
+        embed.description += "\\n".join(site_lines)
+
+        # Vote Now section with links
+        embed.description += "\\n🔗 **Vote Now!**\\n"
         links = []
         for i, site in enumerate(VOTE_SITES, 1):
             links.append(f"{i}. [Vote on {site['name']}]({site['url']})")
+        embed.description += "\\n".join(links)
 
-        # Vote counts and links stacked vertically
-        embed.add_field(
-            name="🗳️ Vote Counts",
-            value="\\n".join(site_lines) if site_lines else "No data yet",
-            inline=False,
-        )
-        embed.add_field(
-            name="🔗 Vote Now",
-            value="\\n".join(links),
-            inline=False,
-        )
-
-        # Footer with timestamp
+        # Footer with update info
         if last_updated and last_scrape_time:
             try:
                 dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
-                
-                # Set embed timestamp (Discord shows this as relative time)
                 embed.timestamp = dt
-                
-                # Simple footer text
-                embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_SECONDS} seconds")
+                embed.set_footer(text=f"Updates every {SCRAPE_INTERVAL_SECONDS}s")
             except ValueError:
-                embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+                embed.set_footer(text=f"Last updated: {last_updated} UTC")
         elif last_updated:
-            embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+            embed.set_footer(text=f"Last updated: {last_updated} UTC")
         else:
-            embed.set_footer(text="⏱️ Waiting for first update...")
+            embed.set_footer(text="Waiting for first update...")
 
         return embed
 
