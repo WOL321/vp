@@ -474,7 +474,7 @@ class EmbedBuilder:
     # Color-coded dot indicators for each vote site
     SITE_DOTS = {
         "Minecraft-MP": "🟡",
-        "MinecraftServers.org": "🔷",
+        "MinecraftServers.org": "🔵",
         "Minecraft-Server-List": "🔴",
     }
 

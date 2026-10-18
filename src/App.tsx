@@ -346,7 +346,7 @@ function LiveTracker() {
   const [lastUpdate, setLastUpdate] = useState(0);
   const [siteVotes, setSiteVotes] = useState([
     { name: 'Minecraft-MP', votes: 4441, dot: '🟡' },
-    { name: 'MinecraftServers.org', votes: 4745, dot: '🔷' },
+    { name: 'MinecraftServers.org', votes: 4745, dot: '🔵' },
     { name: 'Minecraft-Server-List', votes: 4495, dot: '🔴' },
   ]);
 
