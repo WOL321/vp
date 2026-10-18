@@ -1,12 +1,12 @@
 """
 Colombia Vote Party Tracker - Discord Bot
-==========================================
+=========================================
 Production-ready Discord bot for tracking vote party progress
 on the Colombia nation (DiplomaticaMC).
 
 Features:
-- Premium embed design with dynamic color coding
-- Auto-scraping every 3 minutes from 3 vote sites
+- Clean embed design with dynamic color coding
+- Auto-scraping every 15 seconds from 3 vote sites
 - Persistent single-message editing (never spams)
 - Automatic cycle detection and reset at 250 votes
 - Role-based notification system with persistent button
@@ -129,8 +129,8 @@ class BotData:
             "ping_message_id": None,
             "ping_timestamp": None,
             "last_vote_party_time": None,
-            "vote_history": [],  # Track vote counts over time for rate calculation
-            "cycle_start_votes": {},  # Track votes at start of each cycle per site
+            "vote_history": [],
+            "cycle_start_votes": {},
         }
 
     def save(self):
@@ -259,7 +259,7 @@ class VoteScraper:
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
-        self.last_successful_counts: dict[str, int] = {}  # Cache for last successful scrapes
+        self.last_successful_counts: dict[str, int] = {}
 
     async def start(self):
         """Initialize the HTTP session with proper headers."""
@@ -278,8 +278,6 @@ class VoteScraper:
 
     def _validate_vote_count(self, name: str, count: int) -> bool:
         """Validate that a vote count is reasonable."""
-        # Vote counts should be positive and less than 1 million
-        # (most servers have < 100k votes, but we allow up to 1M for safety)
         if count < 0:
             logger.warning(f"{name}: Invalid vote count {count} (negative)")
             return False
@@ -297,50 +295,45 @@ class VoteScraper:
         """
         name = site["name"]
         url = site["url"]
-        
+
         # Minecraft-Server-List uses Cloudflare, so we need cloudscraper
         if name == "Minecraft-Server-List":
             try:
                 scraper = cloudscraper.create_scraper()
                 response = scraper.get(url, timeout=20)
-                
+
                 if response.status_code != 200:
                     logger.warning(f"{name}: HTTP {response.status_code}")
-                    # Return cached value if available
                     if name in self.last_successful_counts:
                         logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                         return name, self.last_successful_counts[name]
                     return name, None
-                
+
                 html = response.text
                 logger.info(f"{name}: Got {len(html)} bytes of HTML (via cloudscraper)")
-                
-                # Try all patterns for this site
+
                 for pattern in site["fallback_patterns"]:
                     match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
                         if self._validate_vote_count(name, count):
                             logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
-                            # Cache successful result
                             self.last_successful_counts[name] = count
                             return name, count
-                
+
                 logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
-                # Return cached value if available
                 if name in self.last_successful_counts:
                     logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                     return name, self.last_successful_counts[name]
                 return name, None
-                
+
             except Exception as e:
                 logger.error(f"{name}: Cloudscraper error - {e}")
-                # Return cached value if available
                 if name in self.last_successful_counts:
                     logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                     return name, self.last_successful_counts[name]
                 return name, None
-        
+
         # For other sites, use regular aiohttp
         try:
             async with self.session.get(
@@ -349,31 +342,24 @@ class VoteScraper:
             ) as resp:
                 if resp.status != 200:
                     logger.warning(f"{name}: HTTP {resp.status}")
-                    # Return cached value if available
                     if name in self.last_successful_counts:
                         logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                         return name, self.last_successful_counts[name]
                     return name, None
 
                 html = await resp.text()
-                
-                # Log a snippet for debugging
                 logger.info(f"{name}: Got {len(html)} bytes of HTML")
 
-                # Try all patterns for this site
                 for pattern in site["fallback_patterns"]:
                     match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
                         if self._validate_vote_count(name, count):
                             logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
-                            # Cache successful result
                             self.last_successful_counts[name] = count
                             return name, count
 
-                # DEBUG: Log what we got so we can fix it
                 logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
-                # Return cached value if available
                 if name in self.last_successful_counts:
                     logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                     return name, self.last_successful_counts[name]
@@ -381,48 +367,36 @@ class VoteScraper:
 
         except asyncio.TimeoutError:
             logger.warning(f"{name}: Request timed out")
-            # Return cached value if available
             if name in self.last_successful_counts:
                 logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                 return name, self.last_successful_counts[name]
             return name, None
         except Exception as e:
             logger.error(f"{name}: Scrape error - {e}")
-            # Return cached value if available
             if name in self.last_successful_counts:
                 logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
                 return name, self.last_successful_counts[name]
             return name, None
 
-    def _extract_number(self, text: str) -> Optional[int]:
-        """Extract an integer from text."""
-        cleaned = re.sub(r"[^\d]", "", text.replace(",", ""))
-        if cleaned:
-            return int(cleaned)
-        return None
-
     async def scrape_all(self) -> tuple[dict[str, Optional[int]], int]:
         """
         Scrape all configured sites sequentially with small delays.
         Returns (site_counts_dict, total_sum).
-        Sequential scraping with delays prevents rate limiting.
         """
         if not self.session:
             await self.start()
 
         counts = {}
         total = 0
-        
-        # Scrape sites sequentially with small delays to avoid rate limiting
+
         for i, site in enumerate(VOTE_SITES):
             name, count = await self.scrape_site(site)
             counts[name] = count
             if count is not None:
                 total += count
-            
-            # Small delay between sites (except after the last one)
+
             if i < len(VOTE_SITES) - 1:
-                await asyncio.sleep(1)  # 1 second delay between sites
+                await asyncio.sleep(1)
 
         logger.info(f"Scrape complete: {counts} | Total: {total}")
         return counts, total
@@ -433,9 +407,8 @@ class VoteScraper:
 
 class EmbedBuilder:
     """
-    Builds a premium, modern vote party tracker embed with dynamic styling.
-    Designed for visual impact and professional appearance.
-    
+    Builds a clean vote party tracker embed with dynamic styling.
+
     Color scheme:
     - Yellow: remaining > 50 (Early stage)
     - Blue: remaining 31-50 (Mid stage)
@@ -444,10 +417,7 @@ class EmbedBuilder:
 
     @staticmethod
     def get_color(remaining: int) -> int:
-        """
-        Determine embed accent color based on remaining votes.
-        Creates visual urgency as the party approaches completion.
-        """
+        """Determine embed accent color based on remaining votes."""
         if remaining <= PING_THRESHOLD:
             return COLOR_RED
         elif remaining <= 50:
@@ -457,10 +427,7 @@ class EmbedBuilder:
 
     @staticmethod
     def get_status_line(remaining: int) -> str:
-        """
-        Get a dynamic status message based on remaining votes.
-        Creates engagement and urgency through progressive messaging.
-        """
+        """Get a dynamic status message based on remaining votes."""
         if remaining <= 0:
             return "🎉 **Vote Party Complete!**"
         elif remaining <= 10:
@@ -474,62 +441,43 @@ class EmbedBuilder:
 
     @staticmethod
     def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
-        """
-        Build a visually appealing progress bar.
-        """
+        """Build a visually appealing progress bar."""
         filled = int(percentage / (100 / length))
         empty = length - filled
-        
-        # Use colored squares based on the accent color
+
         if color == COLOR_RED:
             bar = "🟥" * filled + "⬜" * empty
         elif color == COLOR_BLUE:
             bar = "🟦" * filled + "⬜" * empty
-        else:  # Yellow
-            bar = "🟨" * filled + "⬜" * empty
-        
-        return bar
-
-    @staticmethod
-    def format_site_count(name: str, count: Optional[int], cycle_start: Optional[int] = None, emoji: str = "▸") -> str:
-        """Format individual site vote count with contribution tracking."""
-        if count is not None:
-            if cycle_start is not None:
-                contribution = count - cycle_start
-                if contribution > 0:
-                    return f"{emoji} **{name}** — {count:,} **(+{contribution})**"
-                else:
-                    return f"{emoji} **{name}** — {count:,} (+0)"
-            else:
-                return f"{emoji} **{name}** — {count:,}"
         else:
-            return f"{emoji} **{name}** — ⚠️ Unavailable"
+            bar = "🟨" * filled + "⬜" * empty
+
+        return bar
 
     @staticmethod
     def estimate_completion(vote_history: list, remaining: int) -> Optional[str]:
         """Estimate time to completion based on voting rate."""
         if len(vote_history) < 2:
             return None
-        
-        # Calculate votes per minute from history
-        recent = vote_history[-10:]  # Last 10 data points
+
+        recent = vote_history[-10:]
         if len(recent) < 2:
             return None
-        
+
         first_time = recent[0]["timestamp"]
         first_votes = recent[0]["total"]
         last_time = recent[-1]["timestamp"]
         last_votes = recent[-1]["total"]
-        
+
         time_diff = last_time - first_time
         vote_diff = last_votes - first_votes
-        
+
         if time_diff <= 0 or vote_diff <= 0:
             return None
-        
+
         votes_per_second = vote_diff / time_diff
         seconds_to_complete = remaining / votes_per_second
-        
+
         if seconds_to_complete < 60:
             return f"~{int(seconds_to_complete)}s"
         elif seconds_to_complete < 3600:
@@ -548,21 +496,14 @@ class EmbedBuilder:
         last_vote_party_time: Optional[str] = None,
     ) -> discord.Embed:
         """
-        Build a premium vote party tracker embed with modern design.
-        Features strong visual hierarchy, clean spacing, and dynamic elements.
+        Build a clean vote party tracker embed.
         """
         progress = max(0, VOTE_GOAL - remaining)
         percentage = min(100, max(0, (progress / VOTE_GOAL) * 100))
         color = EmbedBuilder.get_color(remaining)
 
-        # Build visual elements
         bar = EmbedBuilder.build_progress_bar(percentage, color)
         status_line = EmbedBuilder.get_status_line(remaining)
-        
-        # Estimate completion time
-        completion_estimate = None
-        if vote_history:
-            completion_estimate = EmbedBuilder.estimate_completion(vote_history, remaining)
 
         # Create embed with dynamic accent color
         embed = discord.Embed(
@@ -570,7 +511,7 @@ class EmbedBuilder:
             description="",
             color=color,
         )
-        
+
         # Add thumbnail for branding
         embed.set_thumbnail(url=THUMBNAIL_URL)
 
@@ -583,7 +524,6 @@ class EmbedBuilder:
                 f"{VOTE_GOAL} / {VOTE_GOAL} votes collected"
             )
         else:
-            # Clean format matching user's example
             embed.description = (
                 f"**{remaining}** votes remaining\n"
                 f"{bar} {percentage:.1f}%\n"
@@ -596,7 +536,8 @@ class EmbedBuilder:
         embed.description += "🗳️ **Vote Counts**\n"
 
         # Individual site votes with color-coded emojis
-        site_emojis = ["🟡", "🔷", "🔴"]  # Yellow, Dark Blue, Red for each site
+        # 🟡 = Minecraft-MP, 🔷 = MinecraftServers.org, 🔴 = Minecraft-Server-List
+        site_emojis = ["🟡", "🔷", "🔴"]
         for i, site in enumerate(VOTE_SITES):
             name = site["name"]
             count = site_counts.get(name)
@@ -616,7 +557,7 @@ class EmbedBuilder:
         footer_parts = []
         if last_vote_party_time:
             footer_parts.append(f"Last VP: {last_vote_party_time}")
-        
+
         if last_updated and last_scrape_time:
             try:
                 dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
@@ -624,9 +565,9 @@ class EmbedBuilder:
                 embed.timestamp = dt
             except ValueError:
                 pass
-        
+
         footer_parts.append(f"Updates every {SCRAPE_INTERVAL_SECONDS}s")
-        
+
         if footer_parts:
             embed.set_footer(text=" • ".join(footer_parts))
         else:
@@ -726,10 +667,8 @@ class VotePartyBot(commands.Bot):
         logger.info(f"✓ Logged in as {self.user} (ID: {self.user.id})")
         logger.info(f"✓ Connected to {len(self.guilds)} guild(s)")
 
-        # Restore tracker message if it exists
         await self._restore_tracker_message()
 
-        # Start the periodic scraping loop
         if not self.scrape_loop.is_running():
             self.scrape_loop.start()
             logger.info(f"✓ Scrape loop started (every {SCRAPE_INTERVAL_SECONDS} sec)")
@@ -772,41 +711,31 @@ class VotePartyBot(commands.Bot):
             counts, total = await self.scraper.scrape_all()
             baseline = self.bot_data.baseline
 
-            # Calculate remaining votes
             remaining = VOTE_GOAL - (total - baseline)
 
-            # Check if vote party is complete
             if remaining <= 0:
                 logger.info(f"🎉 Vote party complete! Total: {total}")
-                # Record when this vote party completed
                 now = datetime.now(timezone.utc)
                 self.bot_data.last_vote_party_time = now.strftime("%Y-%m-%d %H:%M")
-                
-                # Reset for next cycle
+
                 baseline = total
                 remaining = VOTE_GOAL
                 self.bot_data.baseline = baseline
                 self.bot_data.has_ping_sent = False
-                
-                # Store current counts as cycle start for contribution tracking
+
                 self.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
-                
-                # Clear vote history for new cycle
                 self.bot_data.vote_history = []
-                
-                # Clean up any existing ping message
+
                 self.bot_data.ping_message_id = None
                 self.bot_data.ping_timestamp = None
                 logger.info(f"New cycle started. New baseline: {baseline}")
 
-            # Update stored data
             now = datetime.now(timezone.utc)
             self.bot_data.remaining = max(0, remaining)
             self.bot_data.site_counts = counts
             self.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot_data.last_scrape_time = now.timestamp()
-            
-            # Add to vote history (keep last 100 entries)
+
             self.bot_data.vote_history.append({
                 "timestamp": now.timestamp(),
                 "total": total,
@@ -814,13 +743,10 @@ class VotePartyBot(commands.Bot):
             })
             if len(self.bot_data.vote_history) > 100:
                 self.bot_data.vote_history = self.bot_data.vote_history[-100:]
-            
+
             self.bot_data.save()
 
-            # Update the embed
             await self._update_embed()
-
-            # Check if we need to ping
             await self._check_ping()
 
         except Exception as e:
@@ -897,7 +823,6 @@ class VotePartyBot(commands.Bot):
                 except discord.HTTPException as e:
                     logger.error(f"Failed to delete ping message: {e}")
 
-            # Clear ping data
             self.bot_data.ping_message_id = None
             self.bot_data.ping_timestamp = None
             self.bot_data.save()
@@ -934,7 +859,6 @@ class VotePartyCog(commands.Cog):
             )
             return
 
-        # Check if we already have a message
         if self.bot.tracker_message:
             try:
                 embed = EmbedBuilder.build(
@@ -955,7 +879,6 @@ class VotePartyCog(commands.Cog):
             except discord.NotFound:
                 self.bot.tracker_message = None
 
-        # Create new message
         embed = EmbedBuilder.build(
             remaining=self.bot.bot_data.remaining,
             site_counts=self.bot.bot_data.site_counts,
@@ -969,7 +892,6 @@ class VotePartyCog(commands.Cog):
 
         message = await channel.send(embed=embed, view=view)
 
-        # Save message reference
         self.bot.tracker_message = message
         self.bot.bot_data.message_id = message.id
         self.bot.bot_data.channel_id = channel.id
@@ -997,21 +919,17 @@ class VotePartyCog(commands.Cog):
             )
             return
 
-        # Scrape current totals to calculate the correct baseline
         try:
             counts, current_total = await self.bot.scraper.scrape_all()
-            
-            # Calculate what baseline should be to make remaining = value
-            # remaining = 250 - (current_total - baseline)
-            # So: baseline = current_total - (250 - value)
+
             progress = VOTE_GOAL - value
             new_baseline = current_total - progress
-            
+
             self.bot.bot_data.baseline = new_baseline
             self.bot.bot_data.remaining = value
             self.bot.bot_data.site_counts = counts
             self.bot.bot_data.has_ping_sent = False
-            
+
             now = datetime.now(timezone.utc)
             self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot.bot_data.last_scrape_time = now.timestamp()
@@ -1045,23 +963,19 @@ class VotePartyCog(commands.Cog):
         try:
             counts, total = await self.bot.scraper.scrape_all()
             now = datetime.now(timezone.utc)
-            
-            # Use provided value or current total
+
             new_baseline = value if value is not None else total
-            
+
             self.bot.bot_data.baseline = new_baseline
             self.bot.bot_data.remaining = VOTE_GOAL
             self.bot.bot_data.site_counts = counts
             self.bot.bot_data.has_ping_sent = False
             self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot.bot_data.last_scrape_time = now.timestamp()
-            
-            # Store current counts as cycle start for contribution tracking
+
             self.bot.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
-            
-            # Clear vote history for new cycle
             self.bot.bot_data.vote_history = []
-            
+
             self.bot.bot_data.save()
 
             await self.bot._update_embed()
