@@ -27,6 +27,7 @@ from typing import Optional
 
 import aiohttp
 import discord
+import cloudscraper
 from discord import app_commands
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
@@ -242,12 +243,45 @@ class VoteScraper:
     async def scrape_site(self, site: dict) -> tuple[str, Optional[int]]:
         """
         Scrape a single site for its vote count.
-        Tries primary selectors first, then regex fallbacks.
+        Uses regex on raw HTML for maximum reliability.
+        Uses cloudscraper for sites with Cloudflare protection.
         """
         name = site["name"]
+        url = site["url"]
+        
+        # Minecraft-Server-List uses Cloudflare, so we need cloudscraper
+        if name == "Minecraft-Server-List":
+            try:
+                scraper = cloudscraper.create_scraper()
+                response = scraper.get(url, timeout=20)
+                
+                if response.status_code != 200:
+                    logger.warning(f"{name}: HTTP {response.status_code}")
+                    return name, None
+                
+                html = response.text
+                logger.info(f"{name}: Got {len(html)} bytes of HTML (via cloudscraper)")
+                
+                # Try all patterns for this site
+                for pattern in site["fallback_patterns"]:
+                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        count = int(match.group(1))
+                        if count > 0:
+                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
+                            return name, count
+                
+                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
+                return name, None
+                
+            except Exception as e:
+                logger.error(f"{name}: Cloudscraper error - {e}")
+                return name, None
+        
+        # For other sites, use regular aiohttp
         try:
             async with self.session.get(
-                site["url"],
+                url,
                 timeout=aiohttp.ClientTimeout(total=20)
             ) as resp:
                 if resp.status != 200:
@@ -255,28 +289,21 @@ class VoteScraper:
                     return name, None
 
                 html = await resp.text()
-                soup = BeautifulSoup(html, "html.parser")
+                
+                # Log a snippet for debugging
+                logger.info(f"{name}: Got {len(html)} bytes of HTML")
 
-                # Strategy 1: Try primary CSS selectors
-                for selector in site["primary_selectors"]:
-                    element = soup.select_one(selector)
-                    if element:
-                        text = element.get_text(strip=True)
-                        count = self._extract_number(text)
-                        if count is not None and count > 0:
-                            logger.info(f"{name}: Found {count} votes")
-                            return name, count
-
-                # Strategy 2: Try regex patterns on full HTML
+                # Try all patterns for this site
                 for pattern in site["fallback_patterns"]:
-                    match = re.search(pattern, html, re.IGNORECASE)
+                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
                         if count > 0:
-                            logger.info(f"{name}: Found {count} votes (regex)")
+                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
                             return name, count
 
-                logger.warning(f"{name}: Could not find vote count")
+                # DEBUG: Log what we got so we can fix it
+                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
                 return name, None
 
         except asyncio.TimeoutError:
@@ -897,6 +924,7 @@ export const requirementsTxt = `discord.py>=2.4.0
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
 python-dotenv>=1.0.0
+cloudscraper>=1.2.71
 `;
 
 export const envExample = `# Discord Bot Token
