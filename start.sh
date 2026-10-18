@@ -11,6 +11,14 @@ echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 echo ""
 
+# Install Playwright browsers (if playwright is installed)
+if python -c "import playwright" 2>/dev/null; then
+    echo "🌐 Installing Playwright browsers..."
+    playwright install chromium
+    echo "✓ Playwright browsers installed"
+    echo ""
+fi
+
 # Check if token is set in environment
 if [ -z "$DISCORD_BOT_TOKEN" ]; then
     echo "⚠️  DISCORD_BOT_TOKEN not found in environment variables"

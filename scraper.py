@@ -1,17 +1,36 @@
 """
 Enhanced web scraper for vote count sites with multiple extraction strategies.
+Uses BeautifulSoup, regex, and headless browser (Playwright) for maximum reliability.
 """
 
 import re
 import asyncio
 import logging
+import random
 from typing import Optional
 import aiohttp
 import cloudscraper
 from bs4 import BeautifulSoup
 from config import VOTE_SITES
 
+# Try to import playwright (optional - will fallback if not available)
+try:
+    from playwright.async_api import async_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    logger.warning("Playwright not available - headless browser fallback disabled")
+
 logger = logging.getLogger("VotePartyBot")
+
+# User-agent rotation for better success rate
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+]
 
 
 class VoteScraper:
@@ -27,25 +46,47 @@ class VoteScraper:
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
+        self.playwright = None
+        self.browser = None
         self.last_successful_counts: dict[str, int] = {}
-        self.scrape_attempts: dict[str, int] = {}  # Track success rate
+        self.scrape_attempts: dict[str, dict] = {}  # Track success rate
+        self.consecutive_failures: dict[str, int] = {}  # Track consecutive failures for exponential backoff
 
     async def start(self):
-        """Initialize the HTTP session with proper headers."""
+        """Initialize the HTTP session and optionally playwright browser."""
+        # Initialize aiohttp session with random user-agent
         self.session = aiohttp.ClientSession(
             headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": random.choice(USER_AGENTS),
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             }
         )
+        
+        # Initialize playwright if available
+        if PLAYWRIGHT_AVAILABLE:
+            try:
+                self.playwright = await async_playwright().start()
+                self.browser = await self.playwright.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-setuid-sandbox']
+                )
+                logger.info("✓ Playwright browser initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Playwright: {e}")
+                self.playwright = None
+                self.browser = None
 
     async def close(self):
-        """Close the HTTP session."""
+        """Close the HTTP session and browser."""
         if self.session:
             await self.session.close()
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
 
     def _validate_vote_count(self, name: str, count: int, previous: Optional[int] = None) -> bool:
         """
@@ -140,20 +181,71 @@ class VoteScraper:
                 continue
         return None
 
-    async def scrape_site(self, site: dict, max_retries: int = 2) -> tuple[str, Optional[int]]:
+    async def _extract_with_playwright(self, url: str, site_name: str) -> Optional[int]:
+        """
+        Extract vote count using headless browser (Playwright).
+        Most reliable method - renders JavaScript and handles Cloudflare.
+        Slowest method, used as last resort.
+        """
+        if not self.browser:
+            return None
+        
+        try:
+            page = await self.browser.new_page()
+            page.set_default_timeout(30000)  # 30 second timeout
+            
+            # Navigate to the page
+            await page.goto(url, wait_until='networkidle')
+            
+            # Wait a bit for any dynamic content
+            await asyncio.sleep(2)
+            
+            # Get the page content
+            html = await page.content()
+            
+            # Try BeautifulSoup extraction on the rendered HTML
+            count = self._extract_with_beautifulsoup(html, site_name)
+            
+            await page.close()
+            
+            if count is not None:
+                logger.info(f"{site_name}: Extracted {count} votes via Playwright")
+                return count
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"{site_name}: Playwright extraction error - {e}")
+            try:
+                await page.close()
+            except:
+                pass
+            return None
+
+    async def scrape_site(self, site: dict, max_retries: int = 3) -> tuple[str, Optional[int]]:
         """
         Scrape a single site for its vote count with retry logic.
-        Tries multiple extraction strategies for maximum reliability.
+        Tries multiple extraction strategies for maximum reliability:
+        1. BeautifulSoup (fast, reliable)
+        2. Regex patterns (fallback)
+        3. Playwright headless browser (last resort, most reliable)
+        Uses exponential backoff for retries.
         """
         name = site["name"]
         url = site["url"]
         
         # Track attempts
         if name not in self.scrape_attempts:
-            self.scrape_attempts[name] = {"success": 0, "fail": 0}
+            self.scrape_attempts[name] = {"success": 0, "fail": 0, "playwright": 0}
+        if name not in self.consecutive_failures:
+            self.consecutive_failures[name] = 0
 
         for attempt in range(max_retries + 1):
             try:
+                # Rotate user-agent on each attempt
+                if self.session:
+                    self.session.headers["User-Agent"] = random.choice(USER_AGENTS)
+                
                 # Get HTML content
                 if name == "Minecraft-Server-List":
                     html = await self._fetch_with_cloudscraper(url, name)
@@ -162,9 +254,22 @@ class VoteScraper:
                 
                 if not html:
                     if attempt < max_retries:
-                        logger.info(f"{name}: Retry {attempt + 1}/{max_retries}")
-                        await asyncio.sleep(1)  # Wait before retry
+                        # Exponential backoff: 1s, 2s, 4s, 8s...
+                        wait_time = min(2 ** attempt, 10)
+                        logger.info(f"{name}: Retry {attempt + 1}/{max_retries} (waiting {wait_time}s)")
+                        await asyncio.sleep(wait_time)
                         continue
+                    # Try playwright as last resort
+                    if self.browser:
+                        logger.info(f"{name}: Trying Playwright fallback...")
+                        count = await self._extract_with_playwright(url, name)
+                        if count is not None and self._validate_vote_count(name, count, self.last_successful_counts.get(name)):
+                            logger.info(f"{name}: Found {count} votes (Playwright)")
+                            self.last_successful_counts[name] = count
+                            self.scrape_attempts[name]["success"] += 1
+                            self.scrape_attempts[name]["playwright"] += 1
+                            self.consecutive_failures[name] = 0
+                            return name, count
                     return self._get_cached_or_none(name)
 
                 # Strategy 1: BeautifulSoup (most reliable)
@@ -173,6 +278,7 @@ class VoteScraper:
                     logger.info(f"{name}: Found {count} votes (BeautifulSoup)")
                     self.last_successful_counts[name] = count
                     self.scrape_attempts[name]["success"] += 1
+                    self.consecutive_failures[name] = 0
                     return name, count
 
                 # Strategy 2: Regex patterns (fallback)
@@ -181,25 +287,49 @@ class VoteScraper:
                     logger.info(f"{name}: Found {count} votes (Regex)")
                     self.last_successful_counts[name] = count
                     self.scrape_attempts[name]["success"] += 1
+                    self.consecutive_failures[name] = 0
                     return name, count
 
                 # Both strategies failed
                 logger.warning(f"{name}: Could not extract vote count (attempt {attempt + 1}/{max_retries + 1})")
                 
                 if attempt < max_retries:
-                    await asyncio.sleep(1)  # Wait before retry
+                    # Exponential backoff: 1s, 2s, 4s, 8s...
+                    wait_time = min(2 ** attempt, 10)
+                    await asyncio.sleep(wait_time)
                     continue
                 
-                # All attempts failed
+                # All attempts failed - try playwright as last resort
+                if self.browser:
+                    logger.info(f"{name}: Trying Playwright fallback...")
+                    count = await self._extract_with_playwright(url, name)
+                    if count is not None and self._validate_vote_count(name, count, self.last_successful_counts.get(name)):
+                        logger.info(f"{name}: Found {count} votes (Playwright)")
+                        self.last_successful_counts[name] = count
+                        self.scrape_attempts[name]["success"] += 1
+                        self.scrape_attempts[name]["playwright"] += 1
+                        self.consecutive_failures[name] = 0
+                        return name, count
+                
+                # All strategies failed
                 self.scrape_attempts[name]["fail"] += 1
+                self.consecutive_failures[name] += 1
+                
+                # Log warning if too many consecutive failures
+                if self.consecutive_failures[name] >= 5:
+                    logger.error(f"{name}: {self.consecutive_failures[name]} consecutive failures! Site may be down or changed.")
+                
                 return self._get_cached_or_none(name)
 
             except Exception as e:
                 logger.error(f"{name}: Scrape error (attempt {attempt + 1}/{max_retries + 1}) - {e}")
                 if attempt < max_retries:
-                    await asyncio.sleep(1)
+                    # Exponential backoff: 1s, 2s, 4s, 8s...
+                    wait_time = min(2 ** attempt, 10)
+                    await asyncio.sleep(wait_time)
                     continue
                 self.scrape_attempts[name]["fail"] += 1
+                self.consecutive_failures[name] += 1
                 return self._get_cached_or_none(name)
 
     async def _fetch_with_cloudscraper(self, url: str, name: str) -> Optional[str]:

@@ -362,13 +362,15 @@ class VotePartyCog(commands.Cog):
             inline=False,
         )
         
-        # Success rates
+        # Success rates with breakdown
         success_rates = []
         for name, attempt_stats in stats["scrape_attempts"].items():
             total = attempt_stats["success"] + attempt_stats["fail"]
             if total > 0:
                 rate = (attempt_stats["success"] / total) * 100
-                success_rates.append(f"**{name}:** {rate:.1f}% ({attempt_stats['success']}/{total})")
+                playwright_count = attempt_stats.get("playwright", 0)
+                pw_text = f" (🌐{playwright_count})" if playwright_count > 0 else ""
+                success_rates.append(f"**{name}:** {rate:.1f}% ({attempt_stats['success']}/{total}){pw_text}")
         
         embed.add_field(
             name="📈 Success Rates",
@@ -376,7 +378,25 @@ class VotePartyCog(commands.Cog):
             inline=False,
         )
         
-        embed.set_footer(text="Higher success rates = more reliable scraping")
+        # Consecutive failures
+        consecutive = self.bot.scraper.consecutive_failures
+        if any(v > 0 for v in consecutive.values()):
+            failures = [f"**{name}:** {count}" for name, count in consecutive.items() if count > 0]
+            embed.add_field(
+                name="⚠️ Consecutive Failures",
+                value="\n".join(failures),
+                inline=False,
+            )
+        
+        # Playwright status
+        playwright_status = "✅ Active" if self.bot.scraper.browser else "❌ Not available"
+        embed.add_field(
+            name="🌐 Playwright Browser",
+            value=playwright_status,
+            inline=True,
+        )
+        
+        embed.set_footer(text="🌐 = Playwright fallback used | Higher success rates = more reliable")
         
         await interaction.followup.send(embed=embed, ephemeral=True)
 
