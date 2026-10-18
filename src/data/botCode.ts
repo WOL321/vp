@@ -62,42 +62,32 @@ VOTE_SITES = [
         "url": "https://minecraft-mp.com/server-s349345",
         "description": "Main vote count from server page",
         "primary_selectors": [
-            "span.badge.bg-success",
-            "div.card-body span.badge",
-            "span.votes",
-            "div.votes span",
+            "table.table-bordered tr:nth-of-type(2) td:last-child",
         ],
         "fallback_patterns": [
-            r"(\\d+)\\s*vote",
-            r"Votes?:\\s*(\\d+)",
+            r"Vote\\(s\\)</strong></td>\\s*<td>(\\d+)",
         ],
     },
     {
         "name": "MinecraftServers.org",
         "url": "https://minecraftservers.org/server/679302",
         "description": "Vote count from server listing",
-        "primary_selectors": [
-            "div.votes-count span",
-            "span.votes",
-            "div.server-info .votes",
-            "span[class*='vote']",
-        ],
+        "primary_selectors": [],
         "fallback_patterns": [
-            r"(\\d+)\\s*votes?",
-            r"Votes?:\\s*(\\d+)",
+            r">Votes</div>\\s*<div[^>]*>(\\d+)</div>",
         ],
     },
     {
         "name": "Minecraft-Server-List",
         "url": "https://minecraft-server-list.com/server/513054/vote/",
-        "description": "Monthly/all-time vote count",
+        "description": "Monthly vote count",
         "primary_selectors": [
-            "span.vote-count",
-            "div.vote-stats span",
-            "span[class*='monthly']",
-            "div.monthly-votes span",
+            "td.sm-wide",
         ],
         "fallback_patterns": [
+            r"(\\d+) Players have voted for this server in",
+        ],
+    },
             r"(\\d+)\\s*votes?\\s*(this\\s*month|monthly)",
             r"Monthly:\\s*(\\d+)",
             r"(\\d+)\\s*votes?",
@@ -471,20 +461,17 @@ class EmbedBuilder:
             inline=False,
         )
 
-        # Footer with both relative + absolute time, plus next update countdown
+        # Footer with timestamp
         if last_updated and last_scrape_time:
             try:
                 dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
-                unix_timestamp = int(dt.timestamp())
-
-                # Calculate next update time (scrape interval in seconds)
-                next_update_unix = unix_timestamp + (SCRAPE_INTERVAL_MINUTES * 60)
-
-                # Footer: relative time • next update countdown
-                embed.set_footer(
-                    text=f"⏱️ Updated <t:{unix_timestamp}:R> • Next update <t:{next_update_unix}:R>"
-                )
+                
+                # Set embed timestamp (Discord shows this as relative time)
+                embed.timestamp = dt
+                
+                # Simple footer text
+                embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_MINUTES} minutes")
             except ValueError:
                 embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         elif last_updated:

@@ -729,7 +729,7 @@ function EmbedPreview() {
                         Updated <span className="text-white font-medium">{formatRelativeTime(lastUpdateSeconds)}</span>
                       </span>
                       <span className="text-[#4e5058]">•</span>
-                      <span>Next update in <span className="text-white font-medium">{formatCountdown(lastUpdateSeconds)}</span></span>
+                      <span>Updates every 3 minutes</span>
                     </div>
                   </div>
                 </div>
