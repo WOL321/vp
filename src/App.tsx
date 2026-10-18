@@ -460,7 +460,6 @@ function EmbedPreview() {
   const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('blue');
   const [lastUpdateSeconds, setLastUpdateSeconds] = useState(21);
 
-  // Update the timestamp every second to simulate Discord's relative time
   useEffect(() => {
     const interval = setInterval(() => {
       setLastUpdateSeconds(prev => prev + 1);
@@ -469,55 +468,57 @@ function EmbedPreview() {
   }, []);
 
   const states = {
-    yellow: { remaining: 120, color: '#F1C40F', label: 'Yellow (> 50)', status: '✅ All good! Let\'s get started!' },
-    blue: { remaining: 47, color: '#3498DB', label: 'Blue (31-50)', status: '⚡ Getting close! Keep voting!' },
-    red: { remaining: 23, color: '#E74C3C', label: 'Red (≤ 30)', status: '🔥 Final push! Almost there!' },
+    yellow: { remaining: 120, color: '#F1C40F', glow: '#F1C40F40', label: 'Early Stage', status: '✅ All good! Let\'s get started!' },
+    blue: { remaining: 47, color: '#3498DB', glow: '#3498DB40', label: 'Mid Stage', status: '⚡ Getting close! Keep voting!' },
+    red: { remaining: 23, color: '#E74C3C', glow: '#E74C3C40', label: 'Final Push', status: '🔥 Final push! Almost there!' },
   };
 
   const current = states[previewState];
   const progress = VOTE_GOAL - current.remaining;
   const percentage = (progress / VOTE_GOAL) * 100;
-  const filled = Math.round(percentage / 5);
-  const empty = 20 - filled;
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-20">
+    <section className="max-w-6xl mx-auto px-6 py-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-center mb-14"
+        className="text-center mb-16"
       >
         <div className="flex items-center justify-center gap-3 mb-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
+          <h2 className="text-4xl md:text-5xl font-bold text-white">
             Premium Embed Design
           </h2>
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-            LIVE
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+            Live
           </span>
         </div>
-        <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-          This is exactly what your Discord channel will see. Watch the timestamp update in real-time — just like Discord does.
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-10">
+          Watch the timestamp update in real-time — exactly like Discord does.
         </p>
 
-        {/* State selector */}
         <div className="flex flex-wrap justify-center gap-3">
           {Object.entries(states).map(([key, state]) => (
             <button
               key={key}
               onClick={() => {
                 setPreviewState(key as 'yellow' | 'blue' | 'red');
-                setLastUpdateSeconds(21); // Reset timestamp when changing state
+                setLastUpdateSeconds(21);
               }}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              className={`group relative px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
                 previewState === key
-                  ? 'bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/20'
+                  ? 'text-white scale-105'
                   : 'bg-[#2b2d31] text-gray-400 hover:text-white border border-[#3f4147] hover:border-[#5865F2]/50'
               }`}
+              style={previewState === key ? {
+                background: `linear-gradient(135deg, ${state.color}20, ${state.color}40)`,
+                border: `2px solid ${state.color}`,
+                boxShadow: `0 0 20px ${state.glow}`
+              } : {}}
             >
               <span
-                className="inline-block w-3 h-3 rounded-full mr-2"
+                className="inline-block w-3 h-3 rounded-full mr-2 transition-transform group-hover:scale-125"
                 style={{ backgroundColor: state.color }}
               />
               {state.label}
@@ -528,128 +529,217 @@ function EmbedPreview() {
 
       <motion.div
         key={previewState}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className="max-w-2xl mx-auto"
       >
-        {/* Discord window chrome */}
-        <div className="bg-[#1e1f22] rounded-t-lg px-4 py-2.5 flex items-center gap-2 border-b border-[#1a1b1e]">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-[#ed4245]" />
-            <div className="w-3 h-3 rounded-full bg-[#fee75c]" />
-            <div className="w-3 h-3 rounded-full bg-[#57f287]" />
-          </div>
-          <div className="flex-1 text-center">
-            <span className="text-xs text-[#949ba4] font-medium"># vote-party</span>
-          </div>
-        </div>
+        {/* Glow effect behind the card */}
+        <div 
+          className="absolute inset-0 -z-10 blur-3xl opacity-20 transition-colors duration-500"
+          style={{ backgroundColor: current.color }}
+        />
 
-        {/* Discord message container - looks like actual Discord UI */}
-        <div className="bg-[#313338] rounded-b-lg overflow-hidden shadow-2xl border-x border-b border-[#1e1f22]">
-          {/* Message header - fake user info */}
-          <div className="px-4 pt-4 pb-1 flex items-start gap-3">
-            {/* Bot avatar */}
-            <div className="w-10 h-10 rounded-full bg-[#5865F2] flex items-center justify-center shrink-0">
-              <Bot size={20} className="text-white" />
+        {/* Discord window */}
+        <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ boxShadow: `0 25px 50px -12px ${current.glow}, 0 0 0 1px rgba(255,255,255,0.05)` }}>
+          {/* Window chrome */}
+          <div className="bg-[#1a1b1e] px-5 py-3 flex items-center gap-3 border-b border-[#0d0e10]">
+            <div className="flex gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-sm" />
+              <div className="w-3 h-3 rounded-full bg-[#febc2e] shadow-sm" />
+              <div className="w-3 h-3 rounded-full bg-[#28c840] shadow-sm" />
             </div>
-            {/* Username + bot tag + timestamp */}
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-semibold text-white text-base">Colombia Vote Party</span>
-              <span className="bg-[#5865F2] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded text-xs flex items-center gap-0.5">
-                APP
-              </span>
-              <span className="text-xs text-[#949ba4]">
-                Today at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-              </span>
-            </div>
-          </div>
-
-          {/* Message content area */}
-          <div className="pl-4 pr-4 pb-4 ml-[52px]">
-            {/* The actual embed */}
-            <div className="flex mt-1">
-              {/* Accent bar - the colored stripe on the left */}
-              <div
-                className="w-1 shrink-0 rounded-sm transition-colors duration-500"
-                style={{ backgroundColor: current.color }}
-              />
-              {/* Embed content */}
-              <div className="bg-[#2b2d31] rounded-r-md px-4 py-3 flex-1 min-w-0">
-                {/* Title */}
-                <div className="text-white font-semibold text-base mb-2">
-                  🇨🇴 Colombia Vote Party Tracker
-                </div>
-
-                {/* Description - big bold remaining votes */}
-                <div className="text-[#dbdee1] text-sm leading-relaxed mb-3">
-                  <div className="text-white font-bold text-[22px] leading-tight mb-1">
-                    {current.remaining} votes remaining
-                  </div>
-                  <div className="text-[#dbdee1] text-sm mb-3">
-                    to reach <span className="font-bold text-white">250!</span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="font-mono text-sm mb-1 tracking-tight">
-                    <span style={{ color: current.color }}>
-                      {'▰'.repeat(filled)}
-                    </span>
-                    <span className="text-[#4e5058]">
-                      {'▱'.repeat(empty)}
-                    </span>{' '}
-                    <span className="font-bold text-white text-base ml-1">{percentage.toFixed(1)}%</span>
-                  </div>
-
-                  <div className="text-xs text-[#b5bac1] mb-3">
-                    <span className="font-bold text-white text-sm">{progress}</span> / 250 votes collected
-                  </div>
-
-                  {/* Status message */}
-                  <div className="text-sm font-bold" style={{ color: current.color }}>
-                    {current.status}
-                  </div>
-                </div>
-
-                {/* Field: Vote Counts */}
-                <div className="mt-3">
-                  <div className="text-white font-semibold text-sm mb-1.5">
-                    🗳️ Vote Counts
-                  </div>
-                  <div className="text-sm text-[#dbdee1] space-y-0.5">
-                    <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
-                    <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
-                    <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
-                  </div>
-                </div>
-
-                {/* Field: Vote Now */}
-                <div className="mt-3">
-                  <div className="text-white font-semibold text-sm mb-1.5">
-                    🔗 Vote Now
-                  </div>
-                  <div className="text-sm space-y-0.5">
-                    <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
-                    <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
-                    <div>▸ <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-3 pt-2 border-t border-[#3f4147]/50 flex items-center gap-1.5">
-                  <span className="text-[11px] text-[#949ba4]">
-                    ⏱️ Updated {formatRelativeTime(lastUpdateSeconds)}
-                  </span>
-                </div>
+            <div className="flex-1 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-md bg-[#2b2d31]">
+                <span className="text-[#949ba4] text-sm font-medium"># vote-party</span>
               </div>
             </div>
+          </div>
 
-            {/* Discord button component */}
-            <div className="mt-2 flex gap-2">
-              <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-[#4e505c] hover:bg-[#6d6f7b] text-white text-sm font-medium transition-colors h-8">
-                <span>🔔</span>
-                <span>Get Notified</span>
-              </button>
+          {/* Discord chat area */}
+          <div className="bg-[#313338] px-6 py-5">
+            {/* Message */}
+            <div className="flex gap-4 hover:bg-[#2e3035] rounded-lg p-2 -m-2 transition-colors">
+              {/* Bot avatar */}
+              <div className="relative">
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg"
+                  style={{ background: `linear-gradient(135deg, ${current.color}, #5865F2)` }}
+                >
+                  <Bot size={24} className="text-white" />
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#23a559] rounded-full border-2 border-[#313338]" />
+              </div>
+
+              {/* Message content */}
+              <div className="flex-1 min-w-0">
+                {/* Username line */}
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="font-semibold text-white text-base">Colombia Vote Party</span>
+                  <span className="bg-[#5865F2] text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+                      <path d="M4 0L4.9 2.7L7.8 2.7L5.4 4.5L6.3 7.3L4 5.5L1.7 7.3L2.6 4.5L0.2 2.7L3.1 2.7L4 0Z"/>
+                    </svg>
+                    APP
+                  </span>
+                  <span className="text-xs text-[#949ba4]">
+                    Today at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </span>
+                </div>
+
+                {/* Embed */}
+                <div className="mt-1 flex">
+                  {/* Accent bar with glow */}
+                  <div 
+                    className="w-1 shrink-0 rounded-l transition-all duration-500"
+                    style={{ 
+                      backgroundColor: current.color,
+                      boxShadow: `0 0 10px ${current.color}80`
+                    }}
+                  />
+                  
+                  {/* Embed body */}
+                  <div className="bg-[#2b2d31] rounded-r px-4 py-3 flex-1 min-w-0">
+                    {/* Title */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-white font-semibold text-[15px]">
+                        🇨🇴 Colombia Vote Party Tracker
+                      </span>
+                    </div>
+
+                    {/* Main content - HUGE numbers */}
+                    <div className="mb-4">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span 
+                          className="text-5xl font-black leading-none"
+                          style={{ color: current.color }}
+                        >
+                          {current.remaining}
+                        </span>
+                        <span className="text-xl text-[#b5bac1] font-medium">
+                          votes remaining
+                        </span>
+                      </div>
+                      <div className="text-sm text-[#949ba4] mb-4">
+                        to reach <span className="font-bold text-white">250</span>
+                      </div>
+
+                      {/* Progress bar - modern gradient */}
+                      <div className="relative mb-2">
+                        <div className="h-3 bg-[#1e1f22] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+                            style={{ 
+                              width: `${percentage}%`,
+                              background: `linear-gradient(90deg, ${current.color}, ${current.color}dd)`,
+                              boxShadow: `0 0 20px ${current.color}60`
+                            }}
+                          >
+                            {/* Shimmer effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs mb-3">
+                        <span className="text-[#949ba4]">
+                          <span className="font-bold text-white text-sm">{progress}</span> / 250 votes
+                        </span>
+                        <span 
+                          className="font-bold text-sm"
+                          style={{ color: current.color }}
+                        >
+                          {percentage.toFixed(1)}%
+                        </span>
+                      </div>
+
+                      {/* Status message with background */}
+                      <div 
+                        className="px-3 py-2 rounded-lg text-sm font-bold inline-block"
+                        style={{ 
+                          backgroundColor: `${current.color}15`,
+                          color: current.color,
+                          border: `1px solid ${current.color}30`
+                        }}
+                      >
+                        {current.status}
+                      </div>
+                    </div>
+
+                    {/* Vote Counts */}
+                    <div className="mt-4 pt-4 border-t border-[#3f4147]/50">
+                      <div className="text-white font-semibold text-sm mb-2 flex items-center gap-2">
+                        <span>🗳️</span>
+                        <span>Vote Counts</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { name: 'Minecraft-MP', votes: 89 },
+                          { name: 'MinecraftServers.org', votes: 67 },
+                          { name: 'Minecraft-Server-List', votes: 47 },
+                        ].map((site) => (
+                          <div key={site.name} className="flex items-center justify-between text-sm">
+                            <span className="text-[#dbdee1]">
+                              <span className="font-semibold text-white">{site.name}</span>
+                            </span>
+                            <span className="font-mono font-bold text-white bg-[#1e1f22] px-2 py-0.5 rounded text-xs">
+                              {site.votes}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Vote Links */}
+                    <div className="mt-4 pt-4 border-t border-[#3f4147]/50">
+                      <div className="text-white font-semibold text-sm mb-2 flex items-center gap-2">
+                        <span>🔗</span>
+                        <span>Vote Now</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { name: 'Minecraft-MP', url: 'https://minecraft-mp.com/server-s349345' },
+                          { name: 'MinecraftServers.org', url: 'https://minecraftservers.org/server/679302' },
+                          { name: 'Minecraft-Server-List', url: 'https://minecraft-server-list.com/server/513054/vote/' },
+                        ].map((site) => (
+                          <a 
+                            key={site.name}
+                            href={site.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-[#00a8fc] hover:text-[#00d4ff] hover:underline transition-colors group"
+                          >
+                            <ExternalLink size={12} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                            <span>Vote on {site.name}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-4 pt-3 border-t border-[#3f4147]/50 flex items-center gap-2">
+                      <Clock size={12} className="text-[#949ba4]" />
+                      <span className="text-xs text-[#949ba4]">
+                        Updated <span className="text-[#dbdee1] font-medium">{formatRelativeTime(lastUpdateSeconds)}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Button */}
+                <div className="mt-3">
+                  <button 
+                    className="flex items-center gap-2 px-4 py-2 rounded-md text-white text-sm font-semibold transition-all duration-200 hover:scale-105"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${current.color}, ${current.color}dd)`,
+                      boxShadow: `0 4px 15px ${current.color}40`
+                    }}
+                  >
+                    <Bell size={14} />
+                    <span>Get Notified</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
