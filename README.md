@@ -2,16 +2,16 @@
 
 A production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC). Features a premium embed design with dynamic color coding, automatic scraping, and intelligent notifications.
 
-## 🚀 Quick Deploy
+## 🚀 Quick Deploy (WispByte)
 
 Get your bot running in 5 minutes:
 
-1. **Push to GitHub** → `git push origin main`
-2. **Deploy to Railway** → [railway.app](https://railway.app) (free, runs 24/7)
-3. **Add token** → Set `DISCORD_BOT_TOKEN` in Railway Variables
+1. **Upload files** → Upload `bot.py`, `requirements.txt`, `start.sh` to WispByte
+2. **Set token** → Add `DISCORD_BOT_TOKEN` in WispByte environment variables
+3. **Start server** → Set startup command to `bash start.sh` and start
 4. **Initialize** → Run `/voteparty setup` in Discord
 
-📖 **See [QUICKSTART.md](QUICKSTART.md) for detailed steps**
+📖 **See [WISPBYTE_SETUP.md](WISPBYTE_SETUP.md) for detailed steps**
 
 ---
 
