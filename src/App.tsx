@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bot,
@@ -22,6 +22,18 @@ import {
 import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './data/botCode';
 
 const VOTE_GOAL = 250;
+
+// Helper function to format relative time
+function formatRelativeTime(seconds: number): string {
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds} seconds ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -446,6 +458,15 @@ python bot.py`}
 
 function EmbedPreview() {
   const [previewState, setPreviewState] = useState<'yellow' | 'blue' | 'red'>('blue');
+  const [lastUpdateSeconds, setLastUpdateSeconds] = useState(21);
+
+  // Update the timestamp every second to simulate Discord's relative time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdateSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const states = {
     yellow: { remaining: 120, color: '#F1C40F', label: 'Yellow (> 50)', status: '✅ All good! Let\'s get started!' },
@@ -479,7 +500,10 @@ function EmbedPreview() {
           {Object.entries(states).map(([key, state]) => (
             <button
               key={key}
-              onClick={() => setPreviewState(key as 'yellow' | 'blue' | 'red')}
+              onClick={() => {
+                setPreviewState(key as 'yellow' | 'blue' | 'red');
+                setLastUpdateSeconds(21); // Reset timestamp when changing state
+              }}
               className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 previewState === key
                   ? 'bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/20'
@@ -606,9 +630,9 @@ function EmbedPreview() {
                   </div>
                 </div>
 
-                {/* Footer with relative timestamp */}
+                {/* Footer with live-updating relative timestamp */}
                 <div className="text-xs text-gray-500 pt-4 border-t border-[#2b2d31]">
-                  ⏱️ Updated <span className="text-gray-400">21 seconds ago</span>
+                  ⏱️ Updated <span className="text-gray-400">{formatRelativeTime(lastUpdateSeconds)}</span>
                 </div>
               </div>
             </div>
