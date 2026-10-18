@@ -335,6 +335,51 @@ class VotePartyCog(commands.Cog):
 
         await interaction.followup.send(embed=embed, ephemeral=True)
 
+    @voteparty_group.command(
+        name="scraperstats",
+        description="View scraper statistics and success rates (Admin only)"
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def scraperstats(self, interaction: discord.Interaction):
+        """View scraper statistics for debugging."""
+        await interaction.response.defer(ephemeral=True)
+        
+        stats = self.bot.scraper.get_stats()
+        
+        embed = discord.Embed(
+            title="🔍 Scraper Statistics",
+            description="Detailed scraper performance metrics",
+            color=0x3498DB,
+        )
+        
+        # Last successful counts
+        embed.add_field(
+            name="📊 Last Successful Counts",
+            value="\n".join([
+                f"**{name}:** {count:,}"
+                for name, count in stats["last_successful_counts"].items()
+            ]) or "No data yet",
+            inline=False,
+        )
+        
+        # Success rates
+        success_rates = []
+        for name, attempt_stats in stats["scrape_attempts"].items():
+            total = attempt_stats["success"] + attempt_stats["fail"]
+            if total > 0:
+                rate = (attempt_stats["success"] / total) * 100
+                success_rates.append(f"**{name}:** {rate:.1f}% ({attempt_stats['success']}/{total})")
+        
+        embed.add_field(
+            name="📈 Success Rates",
+            value="\n".join(success_rates) or "No data yet",
+            inline=False,
+        )
+        
+        embed.set_footer(text="Higher success rates = more reliable scraping")
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
     @app_commands.command(
         name="language",
         description="Set your preferred language"
@@ -360,6 +405,7 @@ class VotePartyCog(commands.Cog):
     @setbaseline.error
     @forceupdate.error
     @reset.error
+    @scraperstats.error
     async def voteparty_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ):

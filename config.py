@@ -33,8 +33,12 @@ VOTE_SITES = [
         "url": "https://minecraft-mp.com/server-s349345",
         "emoji": "🟡",
         "fallback_patterns": [
-            r"Vote\(s\)</strong></td>\s*<td>(\d+)",
-            r"Vote\(s\)[^0-9]*(\d+)",
+            # Primary: Table row with "Vote(s)" label
+            r"Vote\(s\)</strong></td>\s*<td[^>]*>\s*(\d+)\s*</td>",
+            # Alternative: Any mention of Vote(s) followed by number
+            r"Vote\(s\)[^0-9]{0,50}(\d+)",
+            # Backup: Look for number in statistics section
+            r"<i class=\"fa fa-thumbs-o-up\"></i>\s*<strong>Vote\(s\)</strong>\s*</td>\s*<td[^>]*>\s*(\d+)",
         ],
     },
     {
@@ -42,8 +46,12 @@ VOTE_SITES = [
         "url": "https://minecraftservers.org/server/679302",
         "emoji": "🔵",
         "fallback_patterns": [
-            r">Votes</div>\s*<div[^>]*>(\d+)</div>",
+            # Primary: Div row with "Votes" label
+            r">Votes</div>\s*<div[^>]*>\s*(\d+)\s*</div>",
+            # Alternative: More flexible pattern
             r"Votes\s*</div>\s*<div[^>]*>\s*(\d+)\s*</div>",
+            # Backup: Look for votes in any context
+            r"\"Votes\"[^}]*?\"(\d+)\"",
         ],
     },
     {
@@ -51,8 +59,12 @@ VOTE_SITES = [
         "url": "https://minecraft-server-list.com/server/513054/vote/",
         "emoji": "🔴",
         "fallback_patterns": [
-            r"(\d+) Players have voted for this server in",
-            r"<b>(\d+) Votes - All time</b>",
+            # Primary: "X Players have voted"
+            r"(\d+)\s+Players have voted for this server in",
+            # Alternative: "X Votes - All time"
+            r"<b>(\d+)\s+Votes\s*-\s*All time</b>",
+            # Backup: Any mention of votes with number
+            r"(\d+)\s+votes?(?:\s+this|\s+total|\s+all)",
         ],
     },
 ]
