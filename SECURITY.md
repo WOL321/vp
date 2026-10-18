@@ -41,21 +41,17 @@
      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
    ```
 
-### Option 2: Environment Variables (For Railway, Heroku, etc.)
+### Option 2: Environment Variables (For WispByte, VPS, etc.)
 
 Most hosting platforms let you set environment variables in their dashboard:
 
-**Railway:**
-- Go to your project
-- Click "Variables" tab
+**WispByte:**
+- Go to your server panel
+- Navigate to "Startup" or "Environment" tab
 - Add `DISCORD_BOT_TOKEN` = your token
+- Save and restart
 
-**Heroku:**
-- Go to your app
-- Settings → Config Vars
-- Add `DISCORD_BOT_TOKEN` = your token
-
-**DigitalOcean/VPS:**
+**VPS/DigitalOcean:**
 ```bash
 # Add to ~/.bashrc or ~/.profile
 export DISCORD_BOT_TOKEN="your_token_here"
