@@ -760,10 +760,26 @@ function Footer() {
   return (
     <footer className="border-t border-gray-800 mt-10 bg-black">
       <div className="max-w-6xl mx-auto px-6 py-10 text-center">
-        <p className="text-gray-500 text-sm">
+        <p className="text-gray-500 text-sm mb-4">
           🇨🇴 Colombia Vote Party Bot • Built for DiplomaticaMC • Python + discord.py 2.x
         </p>
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
+          <a
+            href="https://railway.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors text-sm font-semibold"
+          >
+            🚀 Deploy on Railway
+          </a>
+          <a
+            href="QUICKSTART.md"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-semibold"
+          >
+            📖 Quick Start Guide
+          </a>
+        </div>
+        <div className="flex flex-wrap justify-center gap-6">
           <a
             href="https://discord.com/developers/docs"
             target="_blank"

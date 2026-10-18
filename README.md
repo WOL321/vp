@@ -1,6 +1,19 @@
 # 🇨🇴 Colombia Vote Party Bot
 
-A production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC). Features a premium embed design inspired by Colombian indigenous cultures (Muisca, Tairona, Quimbaya), with dynamic color coding, automatic scraping, and intelligent notifications.
+A production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC). Features a premium embed design with dynamic color coding, automatic scraping, and intelligent notifications.
+
+## 🚀 Quick Deploy
+
+Get your bot running in 5 minutes:
+
+1. **Push to GitHub** → `git push origin main`
+2. **Deploy to Railway** → [railway.app](https://railway.app) (free, runs 24/7)
+3. **Add token** → Set `DISCORD_BOT_TOKEN` in Railway Variables
+4. **Initialize** → Run `/voteparty setup` in Discord
+
+📖 **See [QUICKSTART.md](QUICKSTART.md) for detailed steps**
+
+---
 
 ## ✨ Features
 
