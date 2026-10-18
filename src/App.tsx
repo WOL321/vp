@@ -629,9 +629,9 @@ function EmbedPreview() {
                 
                 {/* Embed content */}
                 <div className="bg-[#2b2d31] rounded-r-sm flex-1 flex flex-col">
-                  {/* Banner image - Colombian indigenous inspired */}
+                  {/* Banner image - Colombian flag inspired */}
                   <img 
-                    src="https://image.qwenlm.ai/generated-images/eec8e122-9980-4954-a34e-c6ffeae38ffa/_result.png"
+                    src="https://image.qwenlm.ai/generated-images/bea82c2c-5e60-4930-9930-6d1d9afb7f03/_result.png"
                     alt="Colombia Vote Party Banner"
                     className="w-full h-32 object-cover rounded-t-sm"
                   />
