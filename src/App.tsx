@@ -23,14 +23,14 @@ import { mainBotCode, requirementsTxt, envExample, setupInstructions } from './d
 
 const VOTE_GOAL = 250;
 
-// Colombian color palette
+// Mesoamerican-inspired color palette
 const COLORS = {
-  yellow: '#FCD116',
-  blue: '#003893',
-  red: '#CE1126',
-  emerald: '#50C878',
-  darkBg: '#1a1a1a',
-  warmDark: '#1e1b18',
+  gold: '#D4AF37',
+  jade: '#00A86B',
+  obsidian: '#0a0a0a',
+  terracotta: '#C65D3B',
+  turquoise: '#008080',
+  warmDark: '#1a1612',
 };
 
 // Helper function to format relative time
@@ -97,15 +97,15 @@ function Hero() {
       {/* Colombian-inspired background with Wayuu pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#003893]/10 via-[#1a1a1a] to-[#1e1b18]" />
       
-      {/* Wayuu-inspired geometric pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, ${COLORS.yellow} 0px, ${COLORS.yellow} 2px, transparent 2px, transparent 20px),
-                          repeating-linear-gradient(-45deg, ${COLORS.red} 0px, ${COLORS.red} 2px, transparent 2px, transparent 20px)`,
+      {/* Mesoamerican-inspired geometric pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, ${COLORS.gold} 0px, ${COLORS.gold} 2px, transparent 2px, transparent 20px),
+                          repeating-linear-gradient(-45deg, ${COLORS.terracotta} 0px, ${COLORS.terracotta} 2px, transparent 2px, transparent 20px)`,
       }} />
       
       {/* Warm glow effects */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#FCD116]/5 rounded-full blur-3xl" />
-      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-[#003893]/8 rounded-full blur-3xl" />
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#D4AF37]/5 rounded-full blur-3xl" />
+      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] bg-[#00A86B]/8 rounded-full blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto px-6 py-24 text-center">
         <motion.div
@@ -113,14 +113,14 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FCD116]/10 to-[#003893]/10 border border-[#FCD116]/30 text-[#FCD116] text-sm font-medium mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#D4AF37]/10 to-[#00A86B]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-sm font-medium mb-8">
             <Bot size={16} />
             Discord Bot • Python 3.10+
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">
             🇨🇴 Colombia{' '}
-            <span className="bg-gradient-to-r from-[#FCD116] via-[#003893] to-[#CE1126] text-transparent bg-clip-text">
+            <span className="bg-gradient-to-r from-[#D4AF37] via-[#00A86B] to-[#C65D3B] text-transparent bg-clip-text">
               Vote Party
             </span>{' '}
             Bot
@@ -135,7 +135,7 @@ function Hero() {
           <div className="flex flex-wrap justify-center gap-4">
             <a
               href="#code"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#FCD116] to-[#FCD116]/90 hover:from-[#FCD116]/90 hover:to-[#FCD116] text-[#1a1a1a] font-semibold transition-all shadow-lg shadow-[#FCD116]/20"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#D4AF37]/90 hover:from-[#D4AF37]/90 hover:to-[#D4AF37] text-[#0a0a0a] font-semibold transition-all shadow-lg shadow-[#D4AF37]/20"
             >
               <Code2 size={18} />
               View Source Code
@@ -158,10 +158,10 @@ function Hero() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto"
         >
           {[
-            { label: 'Vote Goal', value: '250', icon: Target, color: COLORS.yellow },
-            { label: 'Scrape Interval', value: '3 min', icon: Clock, color: COLORS.blue },
-            { label: 'Vote Sites', value: '3', icon: Vote, color: COLORS.emerald },
-            { label: 'Ping Threshold', value: '30', icon: Bell, color: COLORS.red },
+            { label: 'Vote Goal', value: '250', icon: Target, color: COLORS.gold },
+            { label: 'Scrape Interval', value: '3 min', icon: Clock, color: COLORS.turquoise },
+            { label: 'Vote Sites', value: '3', icon: Vote, color: COLORS.jade },
+            { label: 'Ping Threshold', value: '30', icon: Bell, color: COLORS.terracotta },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -185,42 +185,42 @@ function Features() {
       title: 'Robust Auto-Scraping',
       description:
         'Scrapes "Vote(s)" from Minecraft-MP, "Votes" from MinecraftServers.org, and monthly/all-time votes from Minecraft-Server-List. Uses multiple selector strategies + regex fallbacks.',
-      color: COLORS.yellow,
+      color: COLORS.gold,
     },
     {
       icon: Target,
       title: 'Smart Cycle Detection',
       description:
         'Automatically detects when 250 votes are reached and resets for the next vote party cycle. No manual intervention needed.',
-      color: COLORS.blue,
+      color: COLORS.turquoise,
     },
     {
       icon: Bell,
       title: 'Role Notifications',
       description:
         'Pings the VP role when remaining votes drop to 30 or below (once per cycle). Members toggle notifications with a single button click.',
-      color: COLORS.red,
+      color: COLORS.terracotta,
     },
     {
       icon: Shield,
       title: 'Admin Controls',
       description:
         'Full slash command suite: setup tracker, set remaining votes, reset baseline, force updates. All Administrator-only.',
-      color: COLORS.emerald,
+      color: COLORS.jade,
     },
     {
       icon: Zap,
       title: 'Persistent Single Embed',
       description:
         'Edits one message in-place — never spams the channel. Survives bot restarts via JSON persistence. Professional and clean.',
-      color: COLORS.yellow,
+      color: COLORS.gold,
     },
     {
       icon: Users,
       title: 'Dynamic Color-Coded Embed',
       description:
-        'Premium embed with accent bar that changes color: yellow (>50 remaining), blue (31-50), red (≤30). Includes dynamic status messages and progress visualization.',
-      color: COLORS.blue,
+        'Premium embed with accent bar that changes color: gold (>50 remaining), turquoise (31-50), terracotta (≤30). Includes dynamic status messages and progress visualization.',
+      color: COLORS.turquoise,
     },
   ];
 
@@ -281,25 +281,25 @@ function Commands() {
       name: '/voteparty action:setup',
       description: 'Post or update the tracker embed in the current channel',
       permission: 'Administrator',
-      color: COLORS.yellow,
+      color: COLORS.gold,
     },
     {
       name: '/voteparty action:setremaining value:<number>',
       description: 'Manually set the number of remaining votes (0-250)',
       permission: 'Administrator',
-      color: COLORS.blue,
+      color: COLORS.turquoise,
     },
     {
       name: '/voteparty action:setbaseline',
       description: 'Set the current total vote sum as the new baseline',
       permission: 'Administrator',
-      color: COLORS.red,
+      color: COLORS.terracotta,
     },
     {
       name: '/voteparty action:forceupdate',
       description: 'Force an immediate scrape of all sites and update the embed',
       permission: 'Administrator',
-      color: COLORS.emerald,
+      color: COLORS.jade,
     },
   ];
 
@@ -387,8 +387,8 @@ function CodeViewer() {
                   : 'text-gray-400 hover:text-white hover:bg-[#2b2d31]/50'
               }`}
               style={activeTab === tab.name ? {
-                backgroundColor: COLORS.yellow + '20',
-                borderColor: COLORS.yellow + '60',
+                backgroundColor: COLORS.gold + '20',
+                borderColor: COLORS.gold + '60',
               } : {}}
             >
               <tab.icon size={14} />
@@ -417,7 +417,7 @@ function SetupGuide() {
   const steps = [
     {
       title: 'Create a Discord Bot',
-      color: COLORS.yellow,
+      color: COLORS.gold,
       description: (
         <>
           Go to{' '}
@@ -426,7 +426,7 @@ function SetupGuide() {
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline inline-flex items-center gap-1"
-            style={{ color: COLORS.blue }}
+            style={{ color: COLORS.turquoise }}
           >
             Discord Developer Portal <ExternalLink size={12} />
           </a>
@@ -438,19 +438,19 @@ function SetupGuide() {
     },
     {
       title: 'Invite the Bot',
-      color: COLORS.blue,
+      color: COLORS.turquoise,
       description:
         'Use the OAuth2 URL Generator with scopes: bot + applications.commands. Select permissions: Send Messages, Embed Links, Manage Messages, Manage Roles, Read Message History, Use Slash Commands.',
     },
     {
       title: 'Create the VP Role',
-      color: COLORS.red,
+      color: COLORS.terracotta,
       description:
         'In Server Settings → Roles, create a role named exactly "VP". Ensure the bot\'s role is above VP in the hierarchy.',
     },
     {
       title: 'Install & Run',
-      color: COLORS.emerald,
+      color: COLORS.jade,
       description: (
         <div className="mt-3 space-y-2">
           <CodeBlock
@@ -464,7 +464,7 @@ python bot.py`}
     },
     {
       title: 'Initialize the Tracker',
-      color: COLORS.yellow,
+      color: COLORS.gold,
       description:
         'In your desired channel, run /voteparty action:setup. The tracker embed will appear with the 🔔 Get Notified button.',
     },
@@ -532,9 +532,9 @@ function EmbedPreview() {
   }, []);
 
   const states = {
-    yellow: { remaining: 120, color: COLORS.yellow, label: 'Early Stage', status: '✅ **All good! Let\'s get started!**' },
-    blue: { remaining: 47, color: COLORS.blue, label: 'Mid Stage', status: '⚡ **Getting close! Keep voting!**' },
-    red: { remaining: 23, color: COLORS.red, label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
+    yellow: { remaining: 120, color: COLORS.gold, label: 'Early Stage', status: '✅ **All good! Let\'s get started!**' },
+    blue: { remaining: 47, color: COLORS.turquoise, label: 'Mid Stage', status: '⚡ **Getting close! Keep voting!**' },
+    red: { remaining: 23, color: COLORS.terracotta, label: 'Final Push', status: '🔥 **Final push! Almost there!**' },
   };
 
   const current = states[previewState];
@@ -734,11 +734,11 @@ function EmbedPreview() {
 function Footer() {
   return (
     <footer className="border-t border-[#3f4147] mt-10 relative">
-      {/* Colombian flag stripe at the bottom */}
+      {/* Mesoamerican-inspired stripe at the bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1 flex">
-        <div className="flex-1" style={{ backgroundColor: COLORS.yellow }} />
-        <div className="flex-1" style={{ backgroundColor: COLORS.blue }} />
-        <div className="flex-1" style={{ backgroundColor: COLORS.red }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.gold }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.jade }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS.terracotta }} />
       </div>
       
       <div className="max-w-6xl mx-auto px-6 py-10 text-center">
@@ -750,7 +750,7 @@ function Footer() {
             href="https://discord.com/developers/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#FCD116] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#D4AF37] text-sm transition-colors"
           >
             Discord.py Docs
           </a>
@@ -758,7 +758,7 @@ function Footer() {
             href="https://minecraft-mp.com/server-s349345"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#003893] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#00A86B] text-sm transition-colors"
           >
             Minecraft-MP
           </a>
@@ -766,7 +766,7 @@ function Footer() {
             href="https://minecraftservers.org/server/679302"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-[#CE1126] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#C65D3B] text-sm transition-colors"
           >
             MinecraftServers.org
           </a>
