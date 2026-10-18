@@ -59,7 +59,8 @@ VOTE_SITES = [
 
 # ─── Cooldowns (in seconds) ───────────────────────────────────────────────────
 
-VOTE_CLAIM_COOLDOWN = 3600  # 1 hour between vote claims
+# VOTE_CLAIM_COOLDOWN = 3600  # DEPRECATED: Now using 3 votes per cycle limit instead
+MAX_VOTES_PER_CYCLE = 3     # Maximum votes each player can claim per cycle
 REMINDER_COOLDOWN = 1800    # 30 minutes between reminders
 LEADERBOARD_REFRESH = 60    # 1 minute cache for leaderboard
 

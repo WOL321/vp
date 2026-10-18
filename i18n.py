@@ -43,9 +43,9 @@ STRINGS = {
         "btn_leaderboard": "🏆 Leaderboard",
 
         # Vote claim
-        "vote_claimed": "✅ Vote claimed! You now have **{total}** votes this cycle.",
+        "vote_claimed": "✅ Vote claimed! You now have **{total}/3** votes this cycle.",
         "vote_claimed_streak": "✅ Vote claimed! 🔥 **{streak} day streak!**",
-        "vote_cooldown": "⏳ You can claim another vote in **{time}**.",
+        "vote_cooldown": "⚠️ You've already claimed all **3** votes for this cycle!\n*Wait for the next vote party to claim more.*",
         "vote_first_link": "🔗 Please link your Minecraft username first using `/link`.",
 
         # Notifications
@@ -155,9 +155,9 @@ STRINGS = {
         "btn_leaderboard": "🏆 Clasificación",
 
         # Vote claim
-        "vote_claimed": "✅ ¡Voto registrado! Ahora tienes **{total}** votos este ciclo.",
+        "vote_claimed": "✅ ¡Voto registrado! Ahora tienes **{total}/3** votos este ciclo.",
         "vote_claimed_streak": "✅ ¡Voto registrado! 🔥 **¡Racha de {streak} días!**",
-        "vote_cooldown": "⏳ Puedes registrar otro voto en **{time}**.",
+        "vote_cooldown": "⚠️ ¡Ya has reclamado los **3** votos de este ciclo!\n*Espera al próximo vote party para reclamar más.*",
         "vote_first_link": "🔗 Primero vincula tu usuario de Minecraft con `/link`.",
 
         # Notifications
