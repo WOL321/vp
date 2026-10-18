@@ -36,6 +36,14 @@ class VoteNotifyView(discord.ui.View):
         super().__init__(timeout=None)
         self.bot = bot
 
+    async def _delete_message_after(self, message, delay: int):
+        """Delete a message after a specified delay."""
+        await asyncio.sleep(delay)
+        try:
+            await message.delete()
+        except discord.HTTPException:
+            pass  # Message already deleted or no permission
+
     @ui.button(
         label="✅ I Voted!",
         style=discord.ButtonStyle.success,
@@ -99,7 +107,9 @@ class VoteNotifyView(discord.ui.View):
         if remaining_claims > 0:
             confirm_msg += f"\n💡 *{remaining_claims} vote{'s' if remaining_claims > 1 else ''} remaining*"
         
-        await interaction.followup.send(confirm_msg)
+        # Send message and schedule auto-delete after 1 second
+        confirm_message = await interaction.followup.send(confirm_msg)
+        asyncio.create_task(self._delete_message_after(confirm_message, 1))
 
         # Update the tracker embed to show the new claimed vote count
         if self.bot and self.bot.tracker_message:
