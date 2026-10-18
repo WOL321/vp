@@ -438,9 +438,17 @@ class EmbedBuilder:
             inline=False,
         )
 
-        # Footer with timestamp
+        # Footer with relative timestamp using Discord's <t:UNIX:R> format
         if last_updated:
-            embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+            try:
+                # Parse the stored timestamp and convert to Unix timestamp
+                dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
+                dt = dt.replace(tzinfo=timezone.utc)
+                unix_timestamp = int(dt.timestamp())
+                # Use Discord's relative timestamp format
+                embed.set_footer(text=f"⏱️ Updated <t:{unix_timestamp}:R>")
+            except ValueError:
+                embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         else:
             embed.set_footer(text="⏱️ Waiting for first update...")
 

@@ -606,9 +606,9 @@ function EmbedPreview() {
                   </div>
                 </div>
 
-                {/* Footer */}
+                {/* Footer with relative timestamp */}
                 <div className="text-xs text-gray-500 pt-4 border-t border-[#2b2d31]">
-                  ⏱️ Last updated: 2026-01-15 14:32:00 UTC
+                  ⏱️ Updated <span className="text-gray-400">21 seconds ago</span>
                 </div>
               </div>
             </div>
