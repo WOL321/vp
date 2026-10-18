@@ -11,7 +11,7 @@ import discord
 from config import (
     VOTE_GOAL, SCRAPE_INTERVAL_SECONDS, PING_THRESHOLD,
     COLOR_GOLD, COLOR_TURQUOISE, COLOR_RED, COLOR_CELEBRATION, COLOR_COOLDOWN,
-    THUMBNAIL_URL, VOTE_SITES, EmbedState, MILESTONES
+    THUMBNAIL_URL, VOTE_SITES, EmbedState, MILESTONES, MAX_VOTES_PER_CYCLE
 )
 from i18n import t
 
@@ -230,7 +230,7 @@ class EmbedBuilder:
 
         # Show claimed votes (self-reported)
         if claimed_votes is not None and claimed_votes > 0:
-            embed.description += f"\n🗳️ **Claimed this cycle:** {claimed_votes} votes\n"
+            embed.description += f"\n🗳️ **Claimed this cycle:** {claimed_votes} votes ({MAX_VOTES_PER_CYCLE} per player)\n"
             if last_voter:
                 embed.description += f"*Last voter: {last_voter}*\n"
 

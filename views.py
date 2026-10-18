@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Optional
 import discord
 from discord import ui
-from config import VOTE_CLAIM_COOLDOWN, REMINDER_COOLDOWN, VOTE_SITES
+from config import MAX_VOTES_PER_CYCLE, REMINDER_COOLDOWN, VOTE_SITES
 from i18n import t, get_user_lang
 
 logger = logging.getLogger("VotePartyBot")
@@ -68,24 +68,22 @@ class VoteNotifyView(discord.ui.View):
             await interaction.followup.send(t("vote_first_link", lang), ephemeral=True)
             return
 
-        # Check cooldown
+        # Check if they've reached the cycle limit
         player = player_data.get_player(user_id)
-        last_claim = player.get("last_claim_time")
+        votes_this_cycle = player.get("votes_this_cycle", 0)
 
-        if last_claim:
-            elapsed = datetime.now(timezone.utc).timestamp() - last_claim
-            remaining_cooldown = VOTE_CLAIM_COOLDOWN - elapsed
-
-            if remaining_cooldown > 0:
-                time_str = format_cooldown(remaining_cooldown)
-                await interaction.followup.send(
-                    t("vote_cooldown", lang, time=time_str), ephemeral=True
-                )
-                return
+        if votes_this_cycle >= MAX_VOTES_PER_CYCLE:
+            await interaction.followup.send(
+                f"⚠️ You've already claimed all **{MAX_VOTES_PER_CYCLE}** votes for this cycle!\n"
+                f"*Wait for the next vote party to claim more.*",
+                ephemeral=True
+            )
+            return
 
         # Claim the vote
         updated_player = player_data.claim_vote(user_id)
         total_votes = updated_player["votes_this_cycle"]
+        remaining_claims = MAX_VOTES_PER_CYCLE - total_votes
         streak = updated_player.get("streak", 0)
 
         # Update stats
@@ -94,9 +92,12 @@ class VoteNotifyView(discord.ui.View):
 
         # Send public confirmation message
         if streak > 1:
-            confirm_msg = f"✅ **{interaction.user.mention}** voted! 🔥 **{streak} day streak!**\n*They now have **{total_votes}** votes this cycle*"
+            confirm_msg = f"✅ **{interaction.user.mention}** voted! 🔥 **{streak} day streak!**\n*They now have **{total_votes}/{MAX_VOTES_PER_CYCLE}** votes this cycle*"
         else:
-            confirm_msg = f"✅ **{interaction.user.mention}** voted!\n*They now have **{total_votes}** votes this cycle*"
+            confirm_msg = f"✅ **{interaction.user.mention}** voted!\n*They now have **{total_votes}/{MAX_VOTES_PER_CYCLE}** votes this cycle*"
+        
+        if remaining_claims > 0:
+            confirm_msg += f"\n💡 *{remaining_claims} vote{'s' if remaining_claims > 1 else ''} remaining*"
         
         await interaction.followup.send(confirm_msg)
 
