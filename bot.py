@@ -27,6 +27,7 @@ from typing import Optional
 
 import aiohttp
 import discord
+import cloudscraper
 from discord import app_commands
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
@@ -231,9 +232,41 @@ class VoteScraper:
         """
         Scrape a single site for its vote count.
         Uses regex on raw HTML for maximum reliability.
+        Uses cloudscraper for sites with Cloudflare protection.
         """
         name = site["name"]
         url = site["url"]
+        
+        # Minecraft-Server-List uses Cloudflare, so we need cloudscraper
+        if name == "Minecraft-Server-List":
+            try:
+                scraper = cloudscraper.create_scraper()
+                response = scraper.get(url, timeout=20)
+                
+                if response.status_code != 200:
+                    logger.warning(f"{name}: HTTP {response.status_code}")
+                    return name, None
+                
+                html = response.text
+                logger.info(f"{name}: Got {len(html)} bytes of HTML (via cloudscraper)")
+                
+                # Try all patterns for this site
+                for pattern in site["fallback_patterns"]:
+                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        count = int(match.group(1))
+                        if count > 0:
+                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
+                            return name, count
+                
+                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
+                return name, None
+                
+            except Exception as e:
+                logger.error(f"{name}: Cloudscraper error - {e}")
+                return name, None
+        
+        # For other sites, use regular aiohttp
         try:
             async with self.session.get(
                 url,
