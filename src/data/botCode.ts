@@ -239,10 +239,12 @@ class VoteScraper:
     """
     Scrapes vote counts from Minecraft server list websites.
     Uses multiple selector strategies and regex fallbacks for robustness.
+    Includes caching to prevent data loss when scrapes fail.
     """
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
+        self.last_successful_counts: dict[str, int] = {}  # Cache for last successful scrapes
 
     async def start(self):
         """Initialize the HTTP session with proper headers."""
@@ -259,11 +261,23 @@ class VoteScraper:
         if self.session:
             await self.session.close()
 
+    def _validate_vote_count(self, name: str, count: int) -> bool:
+        """Validate that a vote count is reasonable."""
+        # Vote counts should be positive and less than 1 million
+        if count < 0:
+            logger.warning(f"{name}: Invalid vote count {count} (negative)")
+            return False
+        if count > 1000000:
+            logger.warning(f"{name}: Suspicious vote count {count} (too large)")
+            return False
+        return True
+
     async def scrape_site(self, site: dict) -> tuple[str, Optional[int]]:
         """
         Scrape a single site for its vote count.
         Uses regex on raw HTML for maximum reliability.
         Uses cloudscraper for sites with Cloudflare protection.
+        Caches successful results to prevent data loss on failures.
         """
         name = site["name"]
         url = site["url"]
@@ -276,6 +290,10 @@ class VoteScraper:
                 
                 if response.status_code != 200:
                     logger.warning(f"{name}: HTTP {response.status_code}")
+                    # Return cached value if available
+                    if name in self.last_successful_counts:
+                        logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                        return name, self.last_successful_counts[name]
                     return name, None
                 
                 html = response.text
@@ -286,15 +304,25 @@ class VoteScraper:
                     match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
-                        if count > 0:
+                        if self._validate_vote_count(name, count):
                             logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
+                            # Cache successful result
+                            self.last_successful_counts[name] = count
                             return name, count
                 
                 logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
+                # Return cached value if available
+                if name in self.last_successful_counts:
+                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                    return name, self.last_successful_counts[name]
                 return name, None
                 
             except Exception as e:
                 logger.error(f"{name}: Cloudscraper error - {e}")
+                # Return cached value if available
+                if name in self.last_successful_counts:
+                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                    return name, self.last_successful_counts[name]
                 return name, None
         
         # For other sites, use regular aiohttp
@@ -305,6 +333,10 @@ class VoteScraper:
             ) as resp:
                 if resp.status != 200:
                     logger.warning(f"{name}: HTTP {resp.status}")
+                    # Return cached value if available
+                    if name in self.last_successful_counts:
+                        logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                        return name, self.last_successful_counts[name]
                     return name, None
 
                 html = await resp.text()
@@ -317,19 +349,33 @@ class VoteScraper:
                     match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
-                        if count > 0:
+                        if self._validate_vote_count(name, count):
                             logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
+                            # Cache successful result
+                            self.last_successful_counts[name] = count
                             return name, count
 
                 # DEBUG: Log what we got so we can fix it
                 logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
+                # Return cached value if available
+                if name in self.last_successful_counts:
+                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                    return name, self.last_successful_counts[name]
                 return name, None
 
         except asyncio.TimeoutError:
             logger.warning(f"{name}: Request timed out")
+            # Return cached value if available
+            if name in self.last_successful_counts:
+                logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                return name, self.last_successful_counts[name]
             return name, None
         except Exception as e:
             logger.error(f"{name}: Scrape error - {e}")
+            # Return cached value if available
+            if name in self.last_successful_counts:
+                logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
+                return name, self.last_successful_counts[name]
             return name, None
 
     def _extract_number(self, text: str) -> Optional[int]:
@@ -341,21 +387,26 @@ class VoteScraper:
 
     async def scrape_all(self) -> tuple[dict[str, Optional[int]], int]:
         """
-        Scrape all configured sites concurrently.
+        Scrape all configured sites sequentially with small delays.
         Returns (site_counts_dict, total_sum).
+        Sequential scraping with delays prevents rate limiting.
         """
         if not self.session:
             await self.start()
 
-        tasks_list = [self.scrape_site(site) for site in VOTE_SITES]
-        results = await asyncio.gather(*tasks_list)
-
         counts = {}
         total = 0
-        for name, count in results:
+        
+        # Scrape sites sequentially with small delays to avoid rate limiting
+        for i, site in enumerate(VOTE_SITES):
+            name, count = await self.scrape_site(site)
             counts[name] = count
             if count is not None:
                 total += count
+            
+            # Small delay between sites (except after the last one)
+            if i < len(VOTE_SITES) - 1:
+                await asyncio.sleep(1)  # 1 second delay between sites
 
         logger.info(f"Scrape complete: {counts} | Total: {total}")
         return counts, total
