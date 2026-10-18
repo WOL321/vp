@@ -608,30 +608,27 @@ function EmbedPreview() {
                     </div>
                   </div>
 
-                  {/* Inline fields: Vote Counts + Vote Now side by side */}
-                  <div className="mt-3 grid grid-cols-2 gap-4">
-                    {/* Vote Counts field */}
-                    <div>
-                      <div className="text-white font-semibold text-sm mb-1">
-                        🗳️ Vote Counts
-                      </div>
-                      <div className="text-sm text-[#dbdee1] space-y-0.5">
-                        <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
-                        <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
-                        <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
-                      </div>
+                  {/* Vote Counts field */}
+                  <div className="mt-3">
+                    <div className="text-white font-semibold text-sm mb-1">
+                      🗳️ Vote Counts
                     </div>
+                    <div className="text-sm text-[#dbdee1] space-y-0.5">
+                      <div>▸ <span className="font-bold text-white">Minecraft-MP</span> — 89 votes</div>
+                      <div>▸ <span className="font-bold text-white">MinecraftServers.org</span> — 67 votes</div>
+                      <div>▸ <span className="font-bold text-white">Minecraft-Server-List</span> — 47 votes</div>
+                    </div>
+                  </div>
 
-                    {/* Vote Now field - numbered */}
-                    <div>
-                      <div className="text-white font-semibold text-sm mb-1">
-                        🔗 Vote Now
-                      </div>
-                      <div className="text-sm space-y-0.5">
-                        <div>1. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
-                        <div>2. <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
-                        <div>3. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
-                      </div>
+                  {/* Vote Now field - numbered */}
+                  <div className="mt-3">
+                    <div className="text-white font-semibold text-sm mb-1">
+                      🔗 Vote Now
+                    </div>
+                    <div className="text-sm space-y-0.5">
+                      <div>1. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-MP</a></div>
+                      <div>2. <a href="#" className="text-[#00a8fc] hover:underline">Vote on MinecraftServers.org</a></div>
+                      <div>3. <a href="#" className="text-[#00a8fc] hover:underline">Vote on Minecraft-Server-List</a></div>
                     </div>
                   </div>
 

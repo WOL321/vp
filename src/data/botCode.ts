@@ -441,16 +441,16 @@ class EmbedBuilder:
         for i, site in enumerate(VOTE_SITES, 1):
             links.append(f"{i}. [Vote on {site['name']}]({site['url']})")
 
-        # Use inline fields for compact layout
+        # Vote counts and links stacked vertically
         embed.add_field(
             name="🗳️ **Vote Counts**",
             value="\\n".join(site_lines) if site_lines else "No data yet",
-            inline=True,
+            inline=False,
         )
         embed.add_field(
             name="🔗 **Vote Now**",
             value="\\n".join(links),
-            inline=True,
+            inline=False,
         )
 
         # Footer with both relative + absolute time, plus next update countdown
