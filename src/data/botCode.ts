@@ -1,99 +1,43 @@
 export const mainBotCode = `"""
-Colombia Vote Party Tracker - Discord Bot
-==========================================
+Colombia Vote Party Tracker - Discord Bot (Premium Edition)
+============================================================
 Production-ready Discord bot for tracking vote party progress
 on the Colombia nation (DiplomaticaMC).
 
 Features:
-- Premium embed design with dynamic color coding
-- Auto-scraping every 3 minutes from 3 vote sites
+- Premium embed design with multiple visual states
+- Auto-scraping every 15 seconds from 3 vote sites
 - Persistent single-message editing (never spams)
 - Automatic cycle detection and reset at 250 votes
-- Role-based notification system with persistent button
-- Full admin slash command suite
-- Robust error handling and fallback selectors
+- Role-based notification system with persistent buttons
+- Self-reporting vote claims with cooldowns and streaks
+- Personal stats and leaderboards
+- Full Spanish + English support
+- Complete admin slash command suite
+- Robust error handling and recovery
 
 Author: Colombia Nation Admin Team
 License: MIT
 """
 
 import os
-import re
-import json
-import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-import aiohttp
 import discord
-import cloudscraper
-from discord import app_commands
 from discord.ext import commands, tasks
-from bs4 import BeautifulSoup
 
-# Load environment variables from .env file (for local development)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # python-dotenv not installed, that's okay
-
-# ─── Configuration ────────────────────────────────────────────────────────────
-
-VOTE_GOAL = 250
-SCRAPE_INTERVAL_SECONDS = 15
-PING_THRESHOLD = 30  # Ping VP role when remaining <= this
-PING_DELETE_SECONDS = 300  # Delete ping message after 5 minutes (300 seconds)
-DATA_FILE = "bot_data.json"
-
-# Premium embed assets - Colombian flag inspired
-BANNER_URL = "https://image.qwenlm.ai/generated-images/bea82c2c-5e60-4930-9930-6d1d9afb7f03/_result.png"
-THUMBNAIL_URL = "https://cdn.discordapp.com/emojis/947652669680750613.webp"  # Colombia flag emoji
-
-# Color thresholds for embed accent bar
-COLOR_YELLOW = 0xF1C40F  # Remaining > 50 (Early stage)
-COLOR_BLUE = 0x3498DB    # Remaining 31-50 (Mid stage)
-COLOR_RED = 0xE74C3C     # Remaining <= 30 (Final push)
-
-# ─── Vote Site Definitions ────────────────────────────────────────────────────
-
-VOTE_SITES = [
-    {
-        "name": "Minecraft-MP",
-        "url": "https://minecraft-mp.com/server-s349345",
-        "description": "Main vote count from server page",
-        "primary_selectors": [
-            "table.table-bordered tr:nth-of-type(2) td:last-child",
-        ],
-        "fallback_patterns": [
-            r"Vote\\(s\\)</strong></td>\\s*<td>(\\d+)",
-        ],
-    },
-    {
-        "name": "MinecraftServers.org",
-        "url": "https://minecraftservers.org/server/679302",
-        "description": "Vote count from server listing",
-        "primary_selectors": [],
-        "fallback_patterns": [
-            r">Votes</div>\\s*<div[^>]*>(\\d+)</div>",
-        ],
-    },
-    {
-        "name": "Minecraft-Server-List",
-        "url": "https://minecraft-server-list.com/server/513054/vote/",
-        "description": "Monthly vote count",
-        "primary_selectors": [
-            "td.sm-wide",
-        ],
-        "fallback_patterns": [
-            r"(\\d+) Players have voted for this server in",
-            r"(\\d+)\\s*votes?\\s*(this\\s*month|monthly)",
-            r"Monthly:\\s*(\\d+)",
-            r"(\\d+)\\s*votes?",
-        ],
-    },
-]
+from config import (
+    VOTE_GOAL, SCRAPE_INTERVAL_SECONDS, PING_THRESHOLD,
+    PING_DELETE_SECONDS, EmbedState
+)
+from scraper import VoteScraper
+from data_manager import BotData, PlayerData, StatsData
+from embed_builder import EmbedBuilder
+from views import VoteNotifyView
+from commands import VotePartyCog
+from i18n import t
 
 # ─── Logging Setup ────────────────────────────────────────────────────────────
 
@@ -103,530 +47,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("VotePartyBot")
-
-# ─── Data Persistence ─────────────────────────────────────────────────────────
-
-
-class BotData:
-    """Handles persistent storage of bot state using a JSON file."""
-
-    def __init__(self, filepath: str = DATA_FILE):
-        self.filepath = filepath
-        self.data = self._load()
-
-    def _load(self) -> dict:
-        """Load data from JSON file, or return defaults."""
-        if os.path.exists(self.filepath):
-            try:
-                with open(self.filepath, "r") as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
-                logger.error(f"Failed to load data file: {e}")
-        return self._defaults()
-
-    def _defaults(self) -> dict:
-        """Return default data structure."""
-        return {
-            "message_id": None,
-            "channel_id": None,
-            "baseline": 0,
-            "last_sum": 0,
-            "remaining": VOTE_GOAL,
-            "has_ping_sent": False,
-            "last_updated": None,
-            "site_counts": {},
-            "last_scrape_time": None,
-            "ping_message_id": None,
-            "ping_timestamp": None,
-        }
-
-    def save(self):
-        """Persist current data to JSON file."""
-        try:
-            with open(self.filepath, "w") as f:
-                json.dump(self.data, f, indent=2, default=str)
-        except IOError as e:
-            logger.error(f"Failed to save data file: {e}")
-
-    # Property accessors
-    @property
-    def message_id(self) -> Optional[int]:
-        return self.data.get("message_id")
-
-    @message_id.setter
-    def message_id(self, value: Optional[int]):
-        self.data["message_id"] = value
-
-    @property
-    def channel_id(self) -> Optional[int]:
-        return self.data.get("channel_id")
-
-    @channel_id.setter
-    def channel_id(self, value: Optional[int]):
-        self.data["channel_id"] = value
-
-    @property
-    def baseline(self) -> int:
-        return self.data.get("baseline", 0)
-
-    @baseline.setter
-    def baseline(self, value: int):
-        self.data["baseline"] = value
-
-    @property
-    def remaining(self) -> int:
-        return self.data.get("remaining", VOTE_GOAL)
-
-    @remaining.setter
-    def remaining(self, value: int):
-        self.data["remaining"] = value
-
-    @property
-    def has_ping_sent(self) -> bool:
-        return self.data.get("has_ping_sent", False)
-
-    @has_ping_sent.setter
-    def has_ping_sent(self, value: bool):
-        self.data["has_ping_sent"] = value
-
-    @property
-    def site_counts(self) -> dict:
-        return self.data.get("site_counts", {})
-
-    @site_counts.setter
-    def site_counts(self, value: dict):
-        self.data["site_counts"] = value
-
-    @property
-    def last_updated(self) -> Optional[str]:
-        return self.data.get("last_updated")
-
-    @last_updated.setter
-    def last_updated(self, value: Optional[str]):
-        self.data["last_updated"] = value
-
-    @property
-    def last_scrape_time(self) -> Optional[float]:
-        return self.data.get("last_scrape_time")
-
-    @last_scrape_time.setter
-    def last_scrape_time(self, value: Optional[float]):
-        self.data["last_scrape_time"] = value
-
-    @property
-    def ping_message_id(self) -> Optional[int]:
-        return self.data.get("ping_message_id")
-
-    @ping_message_id.setter
-    def ping_message_id(self, value: Optional[int]):
-        self.data["ping_message_id"] = value
-
-    @property
-    def ping_timestamp(self) -> Optional[float]:
-        return self.data.get("ping_timestamp")
-
-    @ping_timestamp.setter
-    def ping_timestamp(self, value: Optional[float]):
-        self.data["ping_timestamp"] = value
-
-
-# ─── Web Scraper ──────────────────────────────────────────────────────────────
-
-
-class VoteScraper:
-    """
-    Scrapes vote counts from Minecraft server list websites.
-    Uses multiple selector strategies and regex fallbacks for robustness.
-    Includes caching to prevent data loss when scrapes fail.
-    """
-
-    def __init__(self):
-        self.session: Optional[aiohttp.ClientSession] = None
-        self.last_successful_counts: dict[str, int] = {}  # Cache for last successful scrapes
-
-    async def start(self):
-        """Initialize the HTTP session with proper headers."""
-        self.session = aiohttp.ClientSession(
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-            }
-        )
-
-    async def close(self):
-        """Close the HTTP session."""
-        if self.session:
-            await self.session.close()
-
-    def _validate_vote_count(self, name: str, count: int) -> bool:
-        """Validate that a vote count is reasonable."""
-        # Vote counts should be positive and less than 1 million
-        if count < 0:
-            logger.warning(f"{name}: Invalid vote count {count} (negative)")
-            return False
-        if count > 1000000:
-            logger.warning(f"{name}: Suspicious vote count {count} (too large)")
-            return False
-        return True
-
-    async def scrape_site(self, site: dict) -> tuple[str, Optional[int]]:
-        """
-        Scrape a single site for its vote count.
-        Uses regex on raw HTML for maximum reliability.
-        Uses cloudscraper for sites with Cloudflare protection.
-        Caches successful results to prevent data loss on failures.
-        """
-        name = site["name"]
-        url = site["url"]
-        
-        # Minecraft-Server-List uses Cloudflare, so we need cloudscraper
-        if name == "Minecraft-Server-List":
-            try:
-                scraper = cloudscraper.create_scraper()
-                response = scraper.get(url, timeout=20)
-                
-                if response.status_code != 200:
-                    logger.warning(f"{name}: HTTP {response.status_code}")
-                    # Return cached value if available
-                    if name in self.last_successful_counts:
-                        logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                        return name, self.last_successful_counts[name]
-                    return name, None
-                
-                html = response.text
-                logger.info(f"{name}: Got {len(html)} bytes of HTML (via cloudscraper)")
-                
-                # Try all patterns for this site
-                for pattern in site["fallback_patterns"]:
-                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
-                    if match:
-                        count = int(match.group(1))
-                        if self._validate_vote_count(name, count):
-                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
-                            # Cache successful result
-                            self.last_successful_counts[name] = count
-                            return name, count
-                
-                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
-                # Return cached value if available
-                if name in self.last_successful_counts:
-                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                    return name, self.last_successful_counts[name]
-                return name, None
-                
-            except Exception as e:
-                logger.error(f"{name}: Cloudscraper error - {e}")
-                # Return cached value if available
-                if name in self.last_successful_counts:
-                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                    return name, self.last_successful_counts[name]
-                return name, None
-        
-        # For other sites, use regular aiohttp
-        try:
-            async with self.session.get(
-                url,
-                timeout=aiohttp.ClientTimeout(total=20)
-            ) as resp:
-                if resp.status != 200:
-                    logger.warning(f"{name}: HTTP {resp.status}")
-                    # Return cached value if available
-                    if name in self.last_successful_counts:
-                        logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                        return name, self.last_successful_counts[name]
-                    return name, None
-
-                html = await resp.text()
-                
-                # Log a snippet for debugging
-                logger.info(f"{name}: Got {len(html)} bytes of HTML")
-
-                # Try all patterns for this site
-                for pattern in site["fallback_patterns"]:
-                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
-                    if match:
-                        count = int(match.group(1))
-                        if self._validate_vote_count(name, count):
-                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
-                            # Cache successful result
-                            self.last_successful_counts[name] = count
-                            return name, count
-
-                # DEBUG: Log what we got so we can fix it
-                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
-                # Return cached value if available
-                if name in self.last_successful_counts:
-                    logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                    return name, self.last_successful_counts[name]
-                return name, None
-
-        except asyncio.TimeoutError:
-            logger.warning(f"{name}: Request timed out")
-            # Return cached value if available
-            if name in self.last_successful_counts:
-                logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                return name, self.last_successful_counts[name]
-            return name, None
-        except Exception as e:
-            logger.error(f"{name}: Scrape error - {e}")
-            # Return cached value if available
-            if name in self.last_successful_counts:
-                logger.info(f"{name}: Using cached value {self.last_successful_counts[name]}")
-                return name, self.last_successful_counts[name]
-            return name, None
-
-    def _extract_number(self, text: str) -> Optional[int]:
-        """Extract an integer from text."""
-        cleaned = re.sub(r"[^\\d]", "", text.replace(",", ""))
-        if cleaned:
-            return int(cleaned)
-        return None
-
-    async def scrape_all(self) -> tuple[dict[str, Optional[int]], int]:
-        """
-        Scrape all configured sites sequentially with small delays.
-        Returns (site_counts_dict, total_sum).
-        Sequential scraping with delays prevents rate limiting.
-        """
-        if not self.session:
-            await self.start()
-
-        counts = {}
-        total = 0
-        
-        # Scrape sites sequentially with small delays to avoid rate limiting
-        for i, site in enumerate(VOTE_SITES):
-            name, count = await self.scrape_site(site)
-            counts[name] = count
-            if count is not None:
-                total += count
-            
-            # Small delay between sites (except after the last one)
-            if i < len(VOTE_SITES) - 1:
-                await asyncio.sleep(1)  # 1 second delay between sites
-
-        logger.info(f"Scrape complete: {counts} | Total: {total}")
-        return counts, total
-
-
-# ─── Embed Builder ────────────────────────────────────────────────────────────
-
-
-class EmbedBuilder:
-    """
-    Builds a premium, modern vote party tracker embed with dynamic styling.
-    Designed for visual impact and professional appearance.
-    
-    Color scheme:
-    - Yellow: remaining > 50 (Early stage)
-    - Blue: remaining 31-50 (Mid stage)
-    - Red: remaining <= 30 (Final push)
-    """
-
-    @staticmethod
-    def get_color(remaining: int) -> int:
-        """
-        Determine embed accent color based on remaining votes.
-        Creates visual urgency as the party approaches completion.
-        """
-        if remaining <= PING_THRESHOLD:
-            return COLOR_RED
-        elif remaining <= 50:
-            return COLOR_BLUE
-        else:
-            return COLOR_YELLOW
-
-    @staticmethod
-    def get_status_line(remaining: int) -> str:
-        """
-        Get a dynamic status message based on remaining votes.
-        Creates engagement and urgency through progressive messaging.
-        """
-        if remaining <= 0:
-            return "🎉 **Vote Party Complete!**"
-        elif remaining <= 10:
-            return "🔥 **Almost there! Party imminent!**"
-        elif remaining <= 30:
-            return "⚡ **Getting close! Notify the server!**"
-        elif remaining <= 100:
-            return "💪 **Good progress! Keep it up!**"
-        else:
-            return "🗳️ **Vote party in progress**"
-
-    @staticmethod
-    def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
-        """
-        Build a visually appealing progress bar using colored emoji squares.
-        More vibrant and eye-catching than unicode blocks.
-        """
-        filled = int(percentage / (100 / length))
-        empty = length - filled
-        
-        # Use colored squares based on the accent color
-        if color == COLOR_RED:
-            return "🟥" * filled + "⬜" * empty
-        elif color == COLOR_BLUE:
-            return "🟦" * filled + "⬜" * empty
-        else:  # Yellow
-            return "🟨" * filled + "⬜" * empty
-
-    # Color-coded dot indicators for each vote site
-    SITE_DOTS = {
-        "Minecraft-MP": "🟡",
-        "MinecraftServers.org": "🔵",
-        "Minecraft-Server-List": "🔴",
-    }
-
-    @staticmethod
-    def format_site_count(name: str, count: Optional[int]) -> str:
-        """Format individual site vote count with colored dot indicator."""
-        dot = EmbedBuilder.SITE_DOTS.get(name, "⚪")
-        if count is not None:
-            return f"{dot} {name} — {count:,}"
-        else:
-            return f"{dot} {name} — ⚠️ Unavailable"
-
-    @staticmethod
-    def build(
-        remaining: int,
-        site_counts: dict[str, Optional[int]],
-        last_updated: Optional[str],
-        last_scrape_time: Optional[float] = None,
-    ) -> discord.Embed:
-        """
-        Build a premium vote party tracker embed with modern design.
-        Features strong visual hierarchy, clean spacing, and dynamic elements.
-        """
-        progress = max(0, VOTE_GOAL - remaining)
-        percentage = min(100, max(0, (progress / VOTE_GOAL) * 100))
-        color = EmbedBuilder.get_color(remaining)
-
-        # Build visual elements
-        bar = EmbedBuilder.build_progress_bar(percentage, color)
-        status_line = EmbedBuilder.get_status_line(remaining)
-
-        # Create embed with dynamic accent color
-        embed = discord.Embed(
-            title="🇨🇴 Colombia Vote Party",
-            description="",
-            color=color,
-        )
-
-        # Build description in the clean text format
-        if remaining <= 0:
-            embed.description = (
-                f"🎉 **Vote Party Complete!**\\n"
-                f"Starting new cycle...\\n\\n"
-                f"{bar} **100.0%**\\n"
-                f"{VOTE_GOAL} / {VOTE_GOAL} votes collected"
-            )
-        else:
-            # Header section
-            embed.description = (
-                f"**{remaining}** votes remaining\\n"
-                f"{bar} {percentage:.1f}%\\n"
-                f"{progress} / {VOTE_GOAL} votes collected\\n\\n"
-                f"{status_line}"
-            )
-
-        # Separator + vote counts section
-        embed.description += "\\n\\n━━━━━━━━━━━━━━━━━━━━\\n"
-        embed.description += "🗳️ **Vote Counts**\\n"
-
-        # Individual site votes with colored dots
-        site_lines = []
-        for site in VOTE_SITES:
-            name = site["name"]
-            count = site_counts.get(name)
-            dot = EmbedBuilder.SITE_DOTS.get(name, "⚪")
-            if count is not None:
-                site_lines.append(f"{dot} {name} — **{count:,}**")
-            else:
-                site_lines.append(f"{dot} {name} — ⚠️ Unavailable")
-
-        embed.description += "\\n".join(site_lines)
-
-        # Vote Now section with links
-        embed.description += "\\n🔗 **Vote Now!**\\n"
-        links = []
-        for i, site in enumerate(VOTE_SITES, 1):
-            links.append(f"{i}. [Vote on {site['name']}]({site['url']})")
-        embed.description += "\\n".join(links)
-
-        # Footer with update info
-        if last_updated and last_scrape_time:
-            try:
-                dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
-                dt = dt.replace(tzinfo=timezone.utc)
-                embed.timestamp = dt
-                embed.set_footer(text=f"Updates every {SCRAPE_INTERVAL_SECONDS}s")
-            except ValueError:
-                embed.set_footer(text=f"Last updated: {last_updated} UTC")
-        elif last_updated:
-            embed.set_footer(text=f"Last updated: {last_updated} UTC")
-        else:
-            embed.set_footer(text="Waiting for first update...")
-
-        return embed
-
-
-# ─── View (Persistent Button) ─────────────────────────────────────────────────
-
-
-class VoteNotifyView(discord.ui.View):
-    """Persistent view with the notification toggle button."""
-
-    def __init__(self):
-        super().__init__(timeout=None)  # Never expires
-
-    @discord.ui.button(
-        label="🔔 Get Notified",
-        style=discord.ButtonStyle.primary,
-        custom_id="vote_notify_toggle",
-    )
-    async def notify_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        """Toggle the VP role for the clicking user."""
-        member = interaction.user
-        if not isinstance(member, discord.Member):
-            await interaction.response.send_message(
-                "❌ This button only works in a server.", ephemeral=True
-            )
-            return
-
-        vp_role = discord.utils.get(interaction.guild.roles, name="VP")
-        if not vp_role:
-            await interaction.response.send_message(
-                "❌ The 'VP' role was not found. Please ask an admin to create it.",
-                ephemeral=True,
-            )
-            return
-
-        try:
-            if vp_role in member.roles:
-                await member.remove_roles(vp_role)
-                await interaction.response.send_message(
-                    "✅ You will **no longer** be notified for vote party updates.",
-                    ephemeral=True,
-                )
-            else:
-                await member.add_roles(vp_role)
-                await interaction.response.send_message(
-                    "✅ You will now be **notified** when the vote party is close!",
-                    ephemeral=True,
-                )
-        except discord.Forbidden:
-            await interaction.response.send_message(
-                "❌ I don't have permission to manage roles. "
-                "Please ensure my role is **above** the VP role.",
-                ephemeral=True,
-            )
-        except discord.HTTPException as e:
-            await interaction.response.send_message(
-                f"❌ An error occurred: {e}", ephemeral=True
-            )
 
 
 # ─── Bot Class ────────────────────────────────────────────────────────────────
@@ -646,8 +66,15 @@ class VotePartyBot(commands.Bot):
             help_command=None,
         )
 
+        # Data managers
         self.bot_data = BotData()
+        self.player_data = PlayerData()
+        self.stats_data = StatsData()
+
+        # Scraper
         self.scraper = VoteScraper()
+
+        # Tracker message reference
         self.tracker_message: Optional[discord.Message] = None
 
     async def setup_hook(self):
@@ -670,6 +97,11 @@ class VotePartyBot(commands.Bot):
             self.scrape_loop.start()
             logger.info(f"✓ Scrape loop started (every {SCRAPE_INTERVAL_SECONDS} sec)")
 
+        # Start reminder checker
+        if not self.reminder_loop.is_running():
+            self.reminder_loop.start()
+            logger.info("✓ Reminder loop started")
+
     async def _restore_tracker_message(self):
         """Attempt to restore the persistent tracker message from saved data."""
         msg_id = self.bot_data.message_id
@@ -684,6 +116,10 @@ class VotePartyBot(commands.Bot):
                 if isinstance(channel, discord.TextChannel):
                     self.tracker_message = await channel.fetch_message(msg_id)
                     logger.info(f"✓ Restored tracker message {msg_id}")
+
+                    # Re-attach the view
+                    view = VoteNotifyView(bot=self)
+                    await self.tracker_message.edit(view=view)
             except (discord.NotFound, discord.Forbidden, discord.HTTPException) as e:
                 logger.warning(f"Could not restore tracker message: {e}")
                 self.bot_data.message_id = None
@@ -692,8 +128,11 @@ class VotePartyBot(commands.Bot):
     async def close(self):
         """Cleanup on shutdown."""
         self.scrape_loop.cancel()
+        self.reminder_loop.cancel()
         await self.scraper.close()
         await super().close()
+
+    # ─── Periodic Tasks ───────────────────────────────────────────────────────
 
     @tasks.loop(seconds=SCRAPE_INTERVAL_SECONDS)
     async def scrape_loop(self):
@@ -702,26 +141,91 @@ class VotePartyBot(commands.Bot):
         await self._perform_scrape_and_update()
         await self._cleanup_old_ping()
 
+    @tasks.loop(minutes=1)
+    async def reminder_loop(self):
+        """Check and send reminders to users."""
+        now = datetime.now(timezone.utc).timestamp()
+
+        for user_id_str, reminder_time in list(self.player_data.data.get("reminders", {}).items()):
+            user_id = int(user_id_str)
+            elapsed = now - reminder_time
+
+            # Send reminder after 30 minutes
+            if elapsed >= 1800:  # 30 minutes
+                try:
+                    user = await self.fetch_user(user_id)
+                    remaining = self.bot_data.remaining
+
+                    if remaining > 0:
+                        lang = self.player_data.get_lang(user_id)
+                        message = t("reminder_message", lang, remaining=remaining)
+                        await user.send(message)
+                        logger.info(f"✓ Sent reminder to {user_id}")
+
+                    # Clear reminder
+                    self.player_data.clear_reminder(user_id)
+
+                except discord.NotFound:
+                    self.player_data.clear_reminder(user_id)
+                except discord.Forbidden:
+                    logger.warning(f"Cannot send DM to {user_id}")
+                    self.player_data.clear_reminder(user_id)
+                except Exception as e:
+                    logger.error(f"Error sending reminder to {user_id}: {e}")
+                    self.player_data.clear_reminder(user_id)
+
+    # ─── Core Logic ───────────────────────────────────────────────────────────
+
     async def _perform_scrape_and_update(self):
         """Scrape all sites, update data, and edit the embed."""
         try:
             counts, total = await self.scraper.scrape_all()
             baseline = self.bot_data.baseline
 
-            # Calculate remaining votes
             remaining = VOTE_GOAL - (total - baseline)
 
             # Check if vote party is complete
             if remaining <= 0:
                 logger.info(f"🎉 Vote party complete! Total: {total}")
+
+                # Record completion
+                now = datetime.now(timezone.utc)
+                self.bot_data.last_vote_party_time = now.strftime("%Y-%m-%d %H:%M")
+
+                # Calculate duration
+                duration = None
+                if self.bot_data.cycle_start_time:
+                    duration = now.timestamp() - self.bot_data.cycle_start_time
+
+                # Get top contributors
+                leaderboard = self.player_data.get_leaderboard(limit=5, cycle_only=True)
+                top_contributors = [
+                    {"user_id": uid, "votes": votes}
+                    for uid, votes in leaderboard
+                ]
+
+                # Record stats
+                if duration:
+                    self.stats_data.record_party(duration, top_contributors)
+
                 # Reset for next cycle
                 baseline = total
                 remaining = VOTE_GOAL
                 self.bot_data.baseline = baseline
                 self.bot_data.has_ping_sent = False
-                # Clean up any existing ping message
+
+                # Store cycle start data
+                self.bot_data.cycle_start_votes = {k: v for k, v in counts.items() if v is not None}
+                self.bot_data.cycle_start_time = now.timestamp()
+                self.bot_data.vote_history = []
+
+                # Reset player cycle votes
+                self.player_data.reset_cycle()
+
+                # Clean up ping
                 self.bot_data.ping_message_id = None
                 self.bot_data.ping_timestamp = None
+
                 logger.info(f"New cycle started. New baseline: {baseline}")
 
             # Update stored data
@@ -730,6 +234,16 @@ class VotePartyBot(commands.Bot):
             self.bot_data.site_counts = counts
             self.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
             self.bot_data.last_scrape_time = now.timestamp()
+
+            # Add to vote history
+            self.bot_data.vote_history.append({
+                "timestamp": now.timestamp(),
+                "total": total,
+                "counts": counts
+            })
+            if len(self.bot_data.vote_history) > 100:
+                self.bot_data.vote_history = self.bot_data.vote_history[-100:]
+
             self.bot_data.save()
 
             # Update the embed
@@ -753,9 +267,13 @@ class VotePartyBot(commands.Bot):
                 site_counts=self.bot_data.site_counts,
                 last_updated=self.bot_data.last_updated,
                 last_scrape_time=self.bot_data.last_scrape_time,
+                vote_history=self.bot_data.vote_history,
+                cycle_start_votes=self.bot_data.cycle_start_votes,
+                cycle_start_time=self.bot_data.cycle_start_time,
+                last_vote_party_time=self.bot_data.last_vote_party_time,
             )
 
-            view = VoteNotifyView()
+            view = VoteNotifyView(bot=self)
             await self.tracker_message.edit(embed=embed, view=view)
             logger.info("Tracker embed updated successfully")
 
@@ -809,218 +327,9 @@ class VotePartyBot(commands.Bot):
                 except discord.HTTPException as e:
                     logger.error(f"Failed to delete ping message: {e}")
 
-            # Clear ping data
             self.bot_data.ping_message_id = None
             self.bot_data.ping_timestamp = None
             self.bot_data.save()
-
-
-# ─── Slash Commands ───────────────────────────────────────────────────────────
-
-
-class VotePartyCog(commands.Cog):
-    """Cog containing all vote party slash commands (Administrator only)."""
-
-    def __init__(self, bot: VotePartyBot):
-        self.bot = bot
-
-    voteparty_group = app_commands.Group(
-        name="voteparty",
-        description="Vote Party management commands",
-        guild_only=True,
-    )
-
-    @voteparty_group.command(
-        name="setup",
-        description="Post or update the tracker embed in this channel"
-    )
-    @app_commands.checks.has_permissions(administrator=True)
-    async def setup(self, interaction: discord.Interaction):
-        """Post or update the tracker embed in the current channel."""
-        await interaction.response.defer(ephemeral=True)
-
-        channel = interaction.channel
-        if not isinstance(channel, discord.TextChannel):
-            await interaction.followup.send(
-                "❌ This command can only be used in a text channel.", ephemeral=True
-            )
-            return
-
-        # Check if we already have a message
-        if self.bot.tracker_message:
-            try:
-                embed = EmbedBuilder.build(
-                    remaining=self.bot.bot_data.remaining,
-                    site_counts=self.bot.bot_data.site_counts,
-                    last_updated=self.bot.bot_data.last_updated,
-                    last_scrape_time=self.bot.bot_data.last_scrape_time,
-                )
-                view = VoteNotifyView()
-                await self.bot.tracker_message.edit(embed=embed, view=view)
-                await interaction.followup.send(
-                    "✅ Tracker embed updated in place!", ephemeral=True
-                )
-                return
-            except discord.NotFound:
-                self.bot.tracker_message = None
-
-        # Create new message
-        embed = EmbedBuilder.build(
-            remaining=self.bot.bot_data.remaining,
-            site_counts=self.bot.bot_data.site_counts,
-            last_updated=self.bot.bot_data.last_updated,
-            last_scrape_time=self.bot.bot_data.last_scrape_time,
-        )
-        view = VoteNotifyView()
-
-        message = await channel.send(embed=embed, view=view)
-
-        # Save message reference
-        self.bot.tracker_message = message
-        self.bot.bot_data.message_id = message.id
-        self.bot.bot_data.channel_id = channel.id
-        self.bot.bot_data.save()
-
-        await interaction.followup.send(
-            f"✅ Vote Party tracker posted in {channel.mention}!",
-            ephemeral=True,
-        )
-
-    @voteparty_group.command(
-        name="setremaining",
-        description="Manually set the number of remaining votes"
-    )
-    @app_commands.describe(value="Number of remaining votes (0-250)")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def setremaining(self, interaction: discord.Interaction, value: int):
-        """Manually set the remaining votes and adjust baseline to persist."""
-        await interaction.response.defer(ephemeral=True)
-
-        if value < 0 or value > VOTE_GOAL:
-            await interaction.followup.send(
-                f"❌ Value must be between 0 and {VOTE_GOAL}.",
-                ephemeral=True,
-            )
-            return
-
-        # Scrape current totals to calculate the correct baseline
-        try:
-            counts, current_total = await self.bot.scraper.scrape_all()
-            
-            # Calculate what baseline should be to make remaining = value
-            # remaining = 250 - (current_total - baseline)
-            # So: baseline = current_total - (250 - value)
-            progress = VOTE_GOAL - value
-            new_baseline = current_total - progress
-            
-            self.bot.bot_data.baseline = new_baseline
-            self.bot.bot_data.remaining = value
-            self.bot.bot_data.site_counts = counts
-            self.bot.bot_data.has_ping_sent = False
-            
-            now = datetime.now(timezone.utc)
-            self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
-            self.bot.bot_data.last_scrape_time = now.timestamp()
-            self.bot.bot_data.save()
-
-            await self.bot._update_embed()
-
-            pct = (progress / VOTE_GOAL) * 100
-
-            await interaction.followup.send(
-                f"✅ Remaining votes set to **{value}**.\\n"
-                f"Progress: {progress}/{VOTE_GOAL} ({pct:.1f}%)\\n"
-                f"Baseline adjusted to **{new_baseline}** to persist.",
-                ephemeral=True,
-            )
-        except Exception as e:
-            await interaction.followup.send(
-                f"❌ Error: {e}", ephemeral=True
-            )
-
-    @voteparty_group.command(
-        name="setbaseline",
-        description="Set the current total vote sum as the new baseline"
-    )
-    @app_commands.describe(value="Optional: Set baseline to a specific number instead of current total")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def setbaseline(self, interaction: discord.Interaction, value: Optional[int] = None):
-        """Set the baseline to current total or a specific value."""
-        await interaction.response.defer(ephemeral=True)
-
-        try:
-            counts, total = await self.bot.scraper.scrape_all()
-            now = datetime.now(timezone.utc)
-            
-            # Use provided value or current total
-            new_baseline = value if value is not None else total
-            
-            self.bot.bot_data.baseline = new_baseline
-            self.bot.bot_data.remaining = VOTE_GOAL
-            self.bot.bot_data.site_counts = counts
-            self.bot.bot_data.has_ping_sent = False
-            self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
-            self.bot.bot_data.last_scrape_time = now.timestamp()
-            self.bot.bot_data.save()
-
-            await self.bot._update_embed()
-
-            if value is not None:
-                await interaction.followup.send(
-                    f"✅ Baseline manually set to **{new_baseline}**.\\n"
-                    f"Vote party reset! {VOTE_GOAL} votes to go.",
-                    ephemeral=True,
-                )
-            else:
-                await interaction.followup.send(
-                    f"✅ New baseline set to **{total}**.\\n"
-                    f"Vote party reset! {VOTE_GOAL} votes to go.",
-                    ephemeral=True,
-                )
-        except Exception as e:
-            await interaction.followup.send(
-                f"❌ Error scraping sites: {e}", ephemeral=True
-            )
-
-    @voteparty_group.command(
-        name="forceupdate",
-        description="Force an immediate scrape and update"
-    )
-    @app_commands.checks.has_permissions(administrator=True)
-    async def forceupdate(self, interaction: discord.Interaction):
-        """Force an immediate scrape and update."""
-        await interaction.response.defer(ephemeral=True)
-
-        try:
-            await self.bot._perform_scrape_and_update()
-
-            await interaction.followup.send(
-                f"✅ Update complete!\\n"
-                f"Remaining: {self.bot.bot_data.remaining} votes",
-                ephemeral=True,
-            )
-        except Exception as e:
-            await interaction.followup.send(
-                f"❌ Error during update: {e}", ephemeral=True
-            )
-
-    @setup.error
-    @setremaining.error
-    @setbaseline.error
-    @forceupdate.error
-    async def voteparty_error(
-        self, interaction: discord.Interaction, error: app_commands.AppCommandError
-    ):
-        """Handle errors for all voteparty commands."""
-        if isinstance(error, app_commands.MissingPermissions):
-            msg = "❌ You need **Administrator** permission to use this command."
-        else:
-            msg = f"❌ An error occurred: {error}"
-
-        if interaction.response.is_done():
-            await interaction.followup.send(msg, ephemeral=True)
-        else:
-            await interaction.response.send_message(msg, ephemeral=True)
 
 
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
@@ -1045,73 +354,102 @@ if __name__ == "__main__":
     main()
 `;
 
-export const requirementsTxt = `discord.py>=2.4.0
+export const requirementsTxt = `discord.py>=2.3.0
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
-python-dotenv>=1.0.0
 cloudscraper>=1.2.71
-`;
+python-dotenv>=1.0.0`;
 
-export const envExample = `# Discord Bot Token
-# Get from: https://discord.com/developers/applications
+export const envExample = `# Discord Bot Token (required)
 DISCORD_BOT_TOKEN=your_bot_token_here
-`;
 
-export const setupInstructions = `# Colombia Vote Party Bot - Setup Guide
+# Optional: Guild ID for faster command syncing
+# GUILD_ID=your_guild_id_here`;
 
-## Prerequisites
-- Python 3.10 or higher
-- Discord account with Administrator permissions
-- Discord Bot Application
+export const setupInstructions = `# Setup Instructions
 
-## Step 1: Create a Discord Bot
-
-1. Go to https://discord.com/developers/applications
-2. Click "New Application" → name it
-3. Go to "Bot" tab → Click "Add Bot"
-4. Enable intents:
-   - ✅ Server Members Intent
-   - ✅ Message Content Intent
-5. Copy the **Bot Token**
-
-## Step 2: Invite the Bot
-
-1. Go to "OAuth2" → "URL Generator"
-2. Select scopes: bot, applications.commands
-3. Select permissions:
-   - Send Messages, Embed Links, Manage Messages
-   - Manage Roles, Read Message History
-4. Copy URL → open in browser → select server
-
-## Step 3: Create the VP Role
-
-1. Server Settings → Roles → Create Role
-2. Name it exactly: **VP**
-3. Bot's role must be ABOVE VP in hierarchy
-
-## Step 4: Install and Run
-
-\`\`\`bash
-cd colombia-vote-party-bot
-python -m venv venv
-source venv/bin/activate  # Windows: venv\\Scripts\\activate
+## 1. Install Dependencies
+\\\`\\\`\\\`bash
 pip install -r requirements.txt
-export DISCORD_BOT_TOKEN='your_token_here'
+\\\`\\\`\\\`
+
+## 2. Configure Environment
+\\\`\\\`\\\`bash
+cp .env.example .env
+# Edit .env with your Discord bot token
+\\\`\\\`\\\`
+
+## 3. Create Discord Bot
+1. Go to https://discord.com/developers/applications
+2. Create a new application
+3. Go to "Bot" tab and create a bot
+4. Copy the bot token to your .env file
+5. Enable these Privileged Gateway Intents:
+   - MESSAGE CONTENT INTENT
+   - SERVER MEMBERS INTENT
+6. Invite the bot to your server with these permissions:
+   - Send Messages
+   - Embed Links
+   - Manage Roles
+   - Use Slash Commands
+   - Read Message History
+
+## 4. Create Required Role
+Create a role named "VP" in your server. This role will be used for notifications.
+Make sure the bot's role is **above** the VP role in the role hierarchy.
+
+## 5. Run the Bot
+\\\`\\\`\\\`bash
 python bot.py
-\`\`\`
+\\\`\\\`\\\`
 
-## Step 5: Initialize
+## 6. Setup the Tracker
+In Discord, use the command:
+\\\`\\\`\\\`
+/voteparty setup
+\\\`\\\`\\\`
 
-1. Go to desired channel
-2. Run: \`/voteparty setup\`
-3. Tracker embed appears with 🔔 button
+This will post the vote party tracker embed in the current channel.
+
+## File Structure
+\\\`\\\`\\\`
+.
+├── bot.py              # Main bot entry point
+├── config.py           # Configuration and constants
+├── scraper.py          # Vote site scraper
+├── data_manager.py     # Data persistence (bot, player, stats)
+├── embed_builder.py    # Premium embed system
+├── views.py            # Interactive buttons and modals
+├── commands.py         # Slash commands
+├── i18n.py             # Spanish + English translations
+├── requirements.txt    # Python dependencies
+├── .env                # Environment variables (create from .env.example)
+├── bot_data.json       # Auto-generated bot state
+├── player_data.json    # Auto-generated player stats
+└── bot_stats.json      # Auto-generated historical stats
+\\\`\\\`\\\`
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| \`/voteparty setup\` | Post/update tracker |
-| \`/voteparty setremaining <n>\` | Set remaining votes |
-| \`/voteparty setbaseline\` | Reset baseline |
-| \`/voteparty forceupdate\` | Force scrape |
+### User Commands
+- \`/link <ign>\` — Link your Minecraft username
+- \`/myvotes\` — View your personal vote stats
+- \`/leaderboard\` — View the vote leaderboard
+- \`/stats\` — View vote party statistics
+- \`/language\` — Set your preferred language (EN/ES)
+
+### Admin Commands
+- \`/voteparty setup\` — Post/update tracker embed
+- \`/voteparty setremaining <value>\` — Set remaining votes
+- \`/voteparty setbaseline [value]\` — Reset cycle baseline
+- \`/voteparty forceupdate\` — Force immediate update
+- \`/voteparty reset\` — Reset all progress
+
+## Interactive Buttons
+The tracker embed includes persistent buttons:
+- ✅ **I Voted!** — Claim your vote (1hr cooldown)
+- 🔔 **Get Notified** — Toggle VP role notifications
+- 📖 **How to Vote** — Vote guide with links
+- ⏰ **Remind Me** — Get a DM reminder in 30min
+- 🏆 **Leaderboard** — View top voters
 `;
