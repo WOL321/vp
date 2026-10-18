@@ -31,6 +31,13 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
 
+# Load environment variables from .env file (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, that's okay
+
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 VOTE_GOAL = 250
@@ -866,6 +873,7 @@ if __name__ == "__main__":
 export const requirementsTxt = `discord.py>=2.4.0
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
 `;
 
 export const envExample = `# Discord Bot Token
