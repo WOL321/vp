@@ -13,6 +13,8 @@ import cloudscraper
 from bs4 import BeautifulSoup
 from config import VOTE_SITES
 
+logger = logging.getLogger("VotePartyBot")
+
 # Try to import playwright (optional - will fallback if not available)
 try:
     from playwright.async_api import async_playwright
@@ -20,8 +22,6 @@ try:
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
     logger.warning("Playwright not available - headless browser fallback disabled")
-
-logger = logging.getLogger("VotePartyBot")
 
 # User-agent rotation for better success rate
 USER_AGENTS = [
@@ -55,12 +55,13 @@ class VoteScraper:
     async def start(self):
         """Initialize the HTTP session and optionally playwright browser."""
         # Initialize aiohttp session with random user-agent
+        # Note: Removed Accept-Encoding header to let aiohttp handle compression automatically
+        # This fixes the "Can not decode content-encoding: brotli" error
         self.session = aiohttp.ClientSession(
             headers={
                 "User-Agent": random.choice(USER_AGENTS),
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             }
         )
