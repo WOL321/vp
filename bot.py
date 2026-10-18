@@ -42,7 +42,7 @@ except ImportError:
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 VOTE_GOAL = 250
-SCRAPE_INTERVAL_MINUTES = 3
+SCRAPE_INTERVAL_SECONDS = 15
 PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
@@ -486,7 +486,7 @@ class EmbedBuilder:
                 embed.timestamp = dt
                 
                 # Simple footer text
-                embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_MINUTES} minutes")
+                embed.set_footer(text=f"⏱️ Updates every {SCRAPE_INTERVAL_SECONDS} seconds")
             except ValueError:
                 embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         elif last_updated:
@@ -594,7 +594,7 @@ class VotePartyBot(commands.Bot):
         # Start the periodic scraping loop
         if not self.scrape_loop.is_running():
             self.scrape_loop.start()
-            logger.info(f"✓ Scrape loop started (every {SCRAPE_INTERVAL_MINUTES} min)")
+            logger.info(f"✓ Scrape loop started (every {SCRAPE_INTERVAL_SECONDS} sec)")
 
     async def _restore_tracker_message(self):
         """Attempt to restore the persistent tracker message from saved data."""
@@ -621,7 +621,7 @@ class VotePartyBot(commands.Bot):
         await self.scraper.close()
         await super().close()
 
-    @tasks.loop(minutes=SCRAPE_INTERVAL_MINUTES)
+    @tasks.loop(seconds=SCRAPE_INTERVAL_SECONDS)
     async def scrape_loop(self):
         """Periodic task: scrape all sites and update the embed."""
         logger.info("Running scheduled scrape...")
