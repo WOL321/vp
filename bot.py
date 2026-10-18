@@ -88,11 +88,6 @@ VOTE_SITES = [
             r"(\d+) Players have voted for this server in",
         ],
     },
-            r"(\d+)\s*votes?\s*(this\s*month|monthly)",
-            r"Monthly:\s*(\d+)",
-            r"(\d+)\s*votes?",
-        ],
-    },
 ]
 
 # ─── Logging Setup ────────────────────────────────────────────────────────────
