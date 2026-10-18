@@ -380,6 +380,9 @@ class VotePartyCog(commands.Cog):
 
     def _build_embed(self, lang: str = "en") -> discord.Embed:
         """Build the tracker embed with current data."""
+        # Get total claimed votes from all players
+        claimed_votes = self.bot.player_data.get_total_claimed_votes(cycle_only=True)
+        
         return EmbedBuilder.build(
             remaining=self.bot.bot_data.remaining,
             site_counts=self.bot.bot_data.site_counts,
@@ -390,4 +393,5 @@ class VotePartyCog(commands.Cog):
             cycle_start_time=self.bot.bot_data.cycle_start_time,
             last_vote_party_time=self.bot.bot_data.last_vote_party_time,
             lang=lang,
+            claimed_votes=claimed_votes,
         )

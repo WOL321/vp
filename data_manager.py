@@ -296,6 +296,14 @@ class PlayerData:
                 rank += 1
         return rank, player_votes
 
+    def get_total_claimed_votes(self, cycle_only: bool = True) -> int:
+        """Get total claimed votes across all players."""
+        key = "votes_this_cycle" if cycle_only else "votes_alltime"
+        total = 0
+        for uid, pdata in self.data["players"].items():
+            total += pdata.get(key, 0)
+        return total
+
     def set_reminder(self, user_id: int, timestamp: float):
         """Set a reminder for a user."""
         self.data["reminders"][str(user_id)] = timestamp

@@ -52,7 +52,7 @@ class VoteNotifyView(discord.ui.View):
             )
             return
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         user_id = interaction.user.id
         lang = self.bot.player_data.get_lang(user_id) if self.bot else "en"
@@ -92,15 +92,33 @@ class VoteNotifyView(discord.ui.View):
         if self.bot:
             self.bot.stats_data.add_votes_cast(1)
 
-        # Send response
+        # Send public confirmation message
         if streak > 1:
-            await interaction.followup.send(
-                t("vote_claimed_streak", lang, streak=streak), ephemeral=True
-            )
+            confirm_msg = f"✅ **{interaction.user.mention}** voted! 🔥 **{streak} day streak!**\n*They now have **{total_votes}** votes this cycle*"
         else:
-            await interaction.followup.send(
-                t("vote_claimed", lang, total=total_votes), ephemeral=True
-            )
+            confirm_msg = f"✅ **{interaction.user.mention}** voted!\n*They now have **{total_votes}** votes this cycle*"
+        
+        await interaction.followup.send(confirm_msg)
+
+        # Update the tracker embed to show the new claimed vote count
+        if self.bot and self.bot.tracker_message:
+            try:
+                from embed_builder import EmbedBuilder
+                embed = EmbedBuilder.build(
+                    remaining=self.bot.bot_data.remaining,
+                    site_counts=self.bot.bot_data.site_counts,
+                    last_updated=self.bot.bot_data.last_updated,
+                    last_scrape_time=self.bot.bot_data.last_scrape_time,
+                    vote_history=self.bot.bot_data.vote_history,
+                    cycle_start_votes=self.bot.bot_data.cycle_start_votes,
+                    cycle_start_time=self.bot.bot_data.cycle_start_time,
+                    last_vote_party_time=self.bot.bot_data.last_vote_party_time,
+                    claimed_votes=total_votes,
+                    last_voter=interaction.user.display_name,
+                )
+                await self.bot.tracker_message.edit(embed=embed)
+            except Exception as e:
+                logger.error(f"Failed to update embed after vote claim: {e}")
 
     @ui.button(
         label="🔔 Get Notified",
