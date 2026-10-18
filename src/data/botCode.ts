@@ -31,6 +31,13 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
 
+# Load environment variables from .env file (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, that's okay
+
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 VOTE_GOAL = 250
@@ -438,9 +445,17 @@ class EmbedBuilder:
             inline=False,
         )
 
-        # Footer with timestamp
+        # Footer with relative timestamp using Discord's <t:UNIX:R> format
         if last_updated:
-            embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+            try:
+                # Parse the stored timestamp and convert to Unix timestamp
+                dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
+                dt = dt.replace(tzinfo=timezone.utc)
+                unix_timestamp = int(dt.timestamp())
+                # Use Discord's relative timestamp format
+                embed.set_footer(text=f"⏱️ Updated <t:{unix_timestamp}:R>")
+            except ValueError:
+                embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         else:
             embed.set_footer(text="⏱️ Waiting for first update...")
 
@@ -858,6 +873,7 @@ if __name__ == "__main__":
 export const requirementsTxt = `discord.py>=2.4.0
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
 `;
 
 export const envExample = `# Discord Bot Token
