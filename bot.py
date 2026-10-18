@@ -265,26 +265,22 @@ class VoteScraper:
 
                 # Site-specific parsing
                 if name == "Minecraft-MP":
-                    # Find the table row containing "Vote(s)"
-                    for row in soup.select("table.table-bordered tr"):
-                        if "Vote(s)" in row.get_text():
-                            cells = row.find_all("td")
-                            if len(cells) >= 2:
-                                count = self._extract_number(cells[1].get_text())
-                                if count:
-                                    logger.info(f"{name}: Found {count} votes")
-                                    return name, count
+                    # Look for "Vote(s)" in text and extract the number after it
+                    text = soup.get_text()
+                    match = re.search(r"Vote\(s\)\s*(\d+)", text)
+                    if match:
+                        count = int(match.group(1))
+                        logger.info(f"{name}: Found {count} votes")
+                        return name, count
                 
                 elif name == "MinecraftServers.org":
-                    # Find the div containing "Votes" label
-                    for row in soup.select("div.server-info div.row"):
-                        if "Votes" in row.get_text():
-                            cells = row.find_all("div")
-                            if len(cells) >= 2:
-                                count = self._extract_number(cells[1].get_text())
-                                if count:
-                                    logger.info(f"{name}: Found {count} votes")
-                                    return name, count
+                    # Look for "Votes" followed by a number
+                    text = soup.get_text()
+                    match = re.search(r"Votes\s+(\d+)", text)
+                    if match:
+                        count = int(match.group(1))
+                        logger.info(f"{name}: Found {count} votes")
+                        return name, count
                 
                 elif name == "Minecraft-Server-List":
                     # Look for monthly votes text
