@@ -2,7 +2,7 @@
 
 ## 🎯 What Was Built
 
-A complete, production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC) with a **premium embed design** that looks modern and professional.
+A complete, production-ready Discord bot for tracking vote party progress on the Colombia nation (DiplomaticaMC) with a **premium embed design** inspired by Colombian indigenous cultures (Muisca, Tairona, Quimbaya) that looks modern, professional, and culturally authentic.
 
 ## ✅ All Requirements Met
 
@@ -20,13 +20,13 @@ A complete, production-ready Discord bot for tracking vote party progress on the
 - ✅ Clean progress bar with percentage
 - ✅ Individual site votes in neat format
 - ✅ Clickable vote links
-- ✅ **Dynamic color-coded accent bar**:
-  - Yellow when remaining > 50
-  - Blue when remaining is 31-50
-  - Red when remaining ≤ 30
+- ✅ **Dynamic color-coded accent bar** (Colombian indigenous palette):
+  - Gold (#D4AF37) when remaining > 50 (Muisca gold work)
+  - Turquoise (#40E0D0) when remaining is 31-50 (Indigenous jewelry)
+  - Blood Red (#8B0000) when remaining ≤ 30 (Ceremonial significance)
 - ✅ Dynamic status messages that change with progress
 - ✅ Excellent spacing and visual hierarchy
-- ✅ Dark theme, modern and polished
+- ✅ Dark theme, modern and polished with cultural authenticity
 
 ### Persistent Message ✓
 - ✅ Single message that gets edited
@@ -100,10 +100,10 @@ The embed features a **premium, modern design** that looks significantly better 
 7. **Clickable links** in Discord blue
 8. **Footer** with timestamp
 
-### Color Psychology
-- **Yellow** (#F1C40F): Early stage, positive energy
-- **Blue** (#3498DB): Mid stage, building momentum
-- **Red** (#E74C3C): Final push, urgency
+### Color Psychology (Colombian Indigenous Palette)
+- **Gold** (#D4AF37): Early stage, Muisca gold work - prosperity and achievement
+- **Turquoise** (#40E0D0): Mid stage, Indigenous jewelry - wisdom and protection
+- **Blood Red** (#8B0000): Final push, Ceremonial significance - urgency and importance
 
 ### Status Messages
 - ✅ "All good! Let's get started!" (>100 remaining)

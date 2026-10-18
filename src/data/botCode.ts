@@ -45,6 +45,10 @@ SCRAPE_INTERVAL_MINUTES = 3
 PING_THRESHOLD = 30  # Ping VP role when remaining <= this
 DATA_FILE = "bot_data.json"
 
+# Premium embed assets - Colombian flag inspired
+BANNER_URL = "https://image.qwenlm.ai/generated-images/bea82c2c-5e60-4930-9930-6d1d9afb7f03/_result.png"
+THUMBNAIL_URL = "https://cdn.discordapp.com/emojis/947652669680750613.webp"  # Colombia flag emoji
+
 # Color thresholds for embed accent bar
 COLOR_YELLOW = 0xF1C40F  # Remaining > 50 (Early stage)
 COLOR_BLUE = 0x3498DB    # Remaining 31-50 (Mid stage)
@@ -141,6 +145,7 @@ class BotData:
             "has_ping_sent": False,
             "last_updated": None,
             "site_counts": {},
+            "last_scrape_time": None,
         }
 
     def save(self):
@@ -207,6 +212,14 @@ class BotData:
     @last_updated.setter
     def last_updated(self, value: Optional[str]):
         self.data["last_updated"] = value
+
+    @property
+    def last_scrape_time(self) -> Optional[float]:
+        return self.data.get("last_scrape_time")
+
+    @last_scrape_time.setter
+    def last_scrape_time(self, value: Optional[float]):
+        self.data["last_scrape_time"] = value
 
 
 # ─── Web Scraper ──────────────────────────────────────────────────────────────
@@ -357,14 +370,21 @@ class EmbedBuilder:
             return "✅ **All good! Let's get started!**"
 
     @staticmethod
-    def build_progress_bar(percentage: float, length: int = 20) -> str:
+    def build_progress_bar(percentage: float, color: int = COLOR_YELLOW, length: int = 10) -> str:
         """
-        Build a visually appealing progress bar.
-        Uses Unicode block characters for a clean, modern look.
+        Build a visually appealing progress bar using colored emoji squares.
+        More vibrant and eye-catching than unicode blocks.
         """
         filled = int(percentage / (100 / length))
         empty = length - filled
-        return "▰" * filled + "▱" * empty
+        
+        # Use colored squares based on the accent color
+        if color == COLOR_RED:
+            return "🟥" * filled + "⬜" * empty
+        elif color == COLOR_BLUE:
+            return "🟦" * filled + "⬜" * empty
+        else:  # Yellow
+            return "🟨" * filled + "⬜" * empty
 
     @staticmethod
     def format_site_count(name: str, count: Optional[int]) -> str:
@@ -379,6 +399,7 @@ class EmbedBuilder:
         remaining: int,
         site_counts: dict[str, Optional[int]],
         last_updated: Optional[str],
+        last_scrape_time: Optional[float] = None,
     ) -> discord.Embed:
         """
         Build a premium vote party tracker embed with modern design.
@@ -389,73 +410,85 @@ class EmbedBuilder:
         color = EmbedBuilder.get_color(remaining)
 
         # Build visual elements
-        bar = EmbedBuilder.build_progress_bar(percentage)
+        bar = EmbedBuilder.build_progress_bar(percentage, color)
         status_line = EmbedBuilder.get_status_line(remaining)
 
         # Create embed with dynamic accent color
         embed = discord.Embed(
-            title="🇨🇴 Colombia Vote Party Tracker",
+            title="🇨🇴 Colombia Vote Party",
+            description="",
             color=color,
-            timestamp=datetime.now(timezone.utc),
         )
+        
+        # Add thumbnail for branding
+        embed.set_thumbnail(url=THUMBNAIL_URL)
 
-        # Main content area - large, bold, clear
+        # Build premium description with clear sections
         if remaining <= 0:
             embed.description = (
-                f"# 🎉 **Vote Party Complete!**\\n"
+                f"## 🎉 **Vote Party Complete!**\\n"
                 f"Starting new cycle...\\n\\n"
                 f"{bar} **100.0%**"
             )
         else:
+            # Header section with big number
             embed.description = (
-                f"# **{remaining}** votes remaining\\n"
-                f"to reach **{VOTE_GOAL}!**\\n\\n"
+                f"# **{remaining}** votes to go\\n\\n"
                 f"{bar} **{percentage:.1f}%**\\n"
                 f"**{progress}** / {VOTE_GOAL} votes collected\\n\\n"
-                f"{status_line}"
             )
+            
+            # Status message with styled box
+            embed.description += f"> {status_line}"
 
-        # Divider for visual separation
-        embed.add_field(name="\\u200b", value="\\u200b", inline=False)
+        # Add separator
+        embed.description += "\\n\\n━━━━━━━━━━━━━━━━━━━━"
 
         # Individual site votes - clean, organized format
         site_lines = []
         for site in VOTE_SITES:
             name = site["name"]
             count = site_counts.get(name)
-            site_lines.append(EmbedBuilder.format_site_count(name, count))
+            if count is not None:
+                site_lines.append(f"▸ **{name}** — **{count}** votes")
+            else:
+                site_lines.append(f"▸ **{name}** — ⚠️ Unavailable")
 
+        # Vote links - numbered
+        links = []
+        for i, site in enumerate(VOTE_SITES, 1):
+            links.append(f"{i}. [Vote on {site['name']}]({site['url']})")
+
+        # Vote counts and links stacked vertically
         embed.add_field(
-            name="🗳️ **Vote Counts**",
+            name="🗳️ Vote Counts",
             value="\\n".join(site_lines) if site_lines else "No data yet",
             inline=False,
         )
-
-        # Another divider
-        embed.add_field(name="\\u200b", value="\\u200b", inline=False)
-
-        # Vote links - clean, clickable
-        links = []
-        for site in VOTE_SITES:
-            links.append(f"▸ [Vote on {site['name']}]({site['url']})")
-
         embed.add_field(
-            name="🔗 **Vote Now**",
+            name="🔗 Vote Now",
             value="\\n".join(links),
             inline=False,
         )
 
-        # Footer with relative timestamp using Discord's <t:UNIX:R> format
-        if last_updated:
+        # Footer with both relative + absolute time, plus next update countdown
+        if last_updated and last_scrape_time:
             try:
-                # Parse the stored timestamp and convert to Unix timestamp
                 dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
                 unix_timestamp = int(dt.timestamp())
-                # Use Discord's relative timestamp format
-                embed.set_footer(text=f"⏱️ Updated <t:{unix_timestamp}:R>")
+
+                # Calculate next update time (scrape interval in seconds)
+                next_update_unix = unix_timestamp + (SCRAPE_INTERVAL_MINUTES * 60)
+
+                # Footer: relative time • next update countdown
+                embed.set_footer(
+                    text=f"⏱️ Updated <t:{unix_timestamp}:R> • Next update <t:{next_update_unix}:R>"
+                )
             except ValueError:
                 embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
+        elif last_updated:
+            embed.set_footer(text=f"⏱️ Last updated: {last_updated} UTC")
         else:
             embed.set_footer(text="⏱️ Waiting for first update...")
 
@@ -612,11 +645,11 @@ class VotePartyBot(commands.Bot):
                 logger.info(f"New cycle started. New baseline: {baseline}")
 
             # Update stored data
+            now = datetime.now(timezone.utc)
             self.bot_data.remaining = max(0, remaining)
             self.bot_data.site_counts = counts
-            self.bot_data.last_updated = datetime.now(timezone.utc).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            self.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
+            self.bot_data.last_scrape_time = now.timestamp()
             self.bot_data.save()
 
             # Update the embed
@@ -639,6 +672,7 @@ class VotePartyBot(commands.Bot):
                 remaining=self.bot_data.remaining,
                 site_counts=self.bot_data.site_counts,
                 last_updated=self.bot_data.last_updated,
+                last_scrape_time=self.bot_data.last_scrape_time,
             )
 
             view = VoteNotifyView()
@@ -712,6 +746,7 @@ class VotePartyCog(commands.Cog):
                     remaining=self.bot.bot_data.remaining,
                     site_counts=self.bot.bot_data.site_counts,
                     last_updated=self.bot.bot_data.last_updated,
+                    last_scrape_time=self.bot.bot_data.last_scrape_time,
                 )
                 view = VoteNotifyView()
                 await self.bot.tracker_message.edit(embed=embed, view=view)
@@ -727,6 +762,7 @@ class VotePartyCog(commands.Cog):
             remaining=self.bot.bot_data.remaining,
             site_counts=self.bot.bot_data.site_counts,
             last_updated=self.bot.bot_data.last_updated,
+            last_scrape_time=self.bot.bot_data.last_scrape_time,
         )
         view = VoteNotifyView()
 
@@ -786,13 +822,13 @@ class VotePartyCog(commands.Cog):
 
         try:
             counts, total = await self.bot.scraper.scrape_all()
+            now = datetime.now(timezone.utc)
             self.bot.bot_data.baseline = total
             self.bot.bot_data.remaining = VOTE_GOAL
             self.bot.bot_data.site_counts = counts
             self.bot.bot_data.has_ping_sent = False
-            self.bot.bot_data.last_updated = datetime.now(timezone.utc).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
+            self.bot.bot_data.last_scrape_time = now.timestamp()
             self.bot.bot_data.save()
 
             await self.bot._update_embed()
