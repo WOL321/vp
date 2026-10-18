@@ -107,9 +107,9 @@ class VoteNotifyView(discord.ui.View):
         if remaining_claims > 0:
             confirm_msg += f"\n💡 *{remaining_claims} vote{'s' if remaining_claims > 1 else ''} remaining*"
         
-        # Send message and schedule auto-delete after 30 seconds
+        # Send message and schedule auto-delete after 1 second
         confirm_message = await interaction.followup.send(confirm_msg)
-        asyncio.create_task(self._delete_message_after(confirm_message, 30))
+        asyncio.create_task(self._delete_message_after(confirm_message, 1))
 
         # Update the tracker embed to show the new claimed vote count
         if self.bot and self.bot.tracker_message:
