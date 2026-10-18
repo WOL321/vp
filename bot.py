@@ -60,32 +60,22 @@ VOTE_SITES = [
     {
         "name": "Minecraft-MP",
         "url": "https://minecraft-mp.com/server-s349345",
-        "description": "Main vote count from server page",
-        "primary_selectors": [
-            "table.table-bordered",  # Get the whole table, then parse
-        ],
         "fallback_patterns": [
             r"Vote\(s\)</strong></td>\s*<td>(\d+)",
+            r"Vote\(s\)[^0-9]*(\d+)",
         ],
     },
     {
         "name": "MinecraftServers.org",
         "url": "https://minecraftservers.org/server/679302",
-        "description": "Vote count from server listing",
-        "primary_selectors": [
-            "div.server-info",  # Get the server info div
-        ],
         "fallback_patterns": [
             r">Votes</div>\s*<div[^>]*>(\d+)</div>",
+            r"Votes\s*</div>\s*<div[^>]*>\s*(\d+)\s*</div>",
         ],
     },
     {
         "name": "Minecraft-Server-List",
         "url": "https://minecraft-server-list.com/server/513054/vote/",
-        "description": "Monthly vote count",
-        "primary_selectors": [
-            "table#votifier_table",
-        ],
         "fallback_patterns": [
             r"(\d+) Players have voted for this server in",
             r"<b>(\d+) Votes - All time</b>",
@@ -227,16 +217,8 @@ class VoteScraper:
         self.session = aiohttp.ClientSession(
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
-                "DNT": "1",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "none",
-                "Sec-Fetch-User": "?1",
             }
         )
 
@@ -248,12 +230,13 @@ class VoteScraper:
     async def scrape_site(self, site: dict) -> tuple[str, Optional[int]]:
         """
         Scrape a single site for its vote count.
-        Tries primary selectors first, then regex fallbacks.
+        Uses regex on raw HTML for maximum reliability.
         """
         name = site["name"]
+        url = site["url"]
         try:
             async with self.session.get(
-                site["url"],
+                url,
                 timeout=aiohttp.ClientTimeout(total=20)
             ) as resp:
                 if resp.status != 200:
@@ -261,46 +244,21 @@ class VoteScraper:
                     return name, None
 
                 html = await resp.text()
-                soup = BeautifulSoup(html, "html.parser")
-
-                # Site-specific parsing
-                if name == "Minecraft-MP":
-                    # Look for "Vote(s)" in text and extract the number after it
-                    text = soup.get_text()
-                    match = re.search(r"Vote\(s\)\s*(\d+)", text)
-                    if match:
-                        count = int(match.group(1))
-                        logger.info(f"{name}: Found {count} votes")
-                        return name, count
                 
-                elif name == "MinecraftServers.org":
-                    # Look for "Votes" followed by a number
-                    text = soup.get_text()
-                    match = re.search(r"Votes\s+(\d+)", text)
-                    if match:
-                        count = int(match.group(1))
-                        logger.info(f"{name}: Found {count} votes")
-                        return name, count
-                
-                elif name == "Minecraft-Server-List":
-                    # Look for monthly votes text
-                    text = soup.get_text()
-                    match = re.search(r"(\d+) Players have voted for this server in", text)
-                    if match:
-                        count = int(match.group(1))
-                        logger.info(f"{name}: Found {count} votes (monthly)")
-                        return name, count
+                # Log a snippet for debugging
+                logger.info(f"{name}: Got {len(html)} bytes of HTML")
 
-                # Fallback: Try regex patterns on full HTML
+                # Try all patterns for this site
                 for pattern in site["fallback_patterns"]:
-                    match = re.search(pattern, html, re.IGNORECASE)
+                    match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
                     if match:
                         count = int(match.group(1))
                         if count > 0:
-                            logger.info(f"{name}: Found {count} votes (regex)")
+                            logger.info(f"{name}: Found {count} votes (pattern: {pattern[:30]}...)")
                             return name, count
 
-                logger.warning(f"{name}: Could not find vote count")
+                # DEBUG: Log what we got so we can fix it
+                logger.warning(f"{name}: Could not find vote count. HTML snippet: {html[:500]}")
                 return name, None
 
         except asyncio.TimeoutError:
