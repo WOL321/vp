@@ -44,6 +44,7 @@ except ImportError:
 VOTE_GOAL = 250
 SCRAPE_INTERVAL_SECONDS = 15
 PING_THRESHOLD = 30  # Ping VP role when remaining <= this
+PING_DELETE_SECONDS = 300  # Delete ping message after 5 minutes (300 seconds)
 DATA_FILE = "bot_data.json"
 
 # Premium embed assets - Colombian flag inspired
@@ -137,6 +138,8 @@ class BotData:
             "last_updated": None,
             "site_counts": {},
             "last_scrape_time": None,
+            "ping_message_id": None,
+            "ping_timestamp": None,
         }
 
     def save(self):
@@ -211,6 +214,22 @@ class BotData:
     @last_scrape_time.setter
     def last_scrape_time(self, value: Optional[float]):
         self.data["last_scrape_time"] = value
+
+    @property
+    def ping_message_id(self) -> Optional[int]:
+        return self.data.get("ping_message_id")
+
+    @ping_message_id.setter
+    def ping_message_id(self, value: Optional[int]):
+        self.data["ping_message_id"] = value
+
+    @property
+    def ping_timestamp(self) -> Optional[float]:
+        return self.data.get("ping_timestamp")
+
+    @ping_timestamp.setter
+    def ping_timestamp(self, value: Optional[float]):
+        self.data["ping_timestamp"] = value
 
 
 # ─── Web Scraper ──────────────────────────────────────────────────────────────
@@ -638,6 +657,7 @@ class VotePartyBot(commands.Bot):
         """Periodic task: scrape all sites and update the embed."""
         logger.info("Running scheduled scrape...")
         await self._perform_scrape_and_update()
+        await self._cleanup_old_ping()
 
     async def _perform_scrape_and_update(self):
         """Scrape all sites, update data, and edit the embed."""
@@ -656,6 +676,9 @@ class VotePartyBot(commands.Bot):
                 remaining = VOTE_GOAL
                 self.bot_data.baseline = baseline
                 self.bot_data.has_ping_sent = False
+                # Clean up any existing ping message
+                self.bot_data.ping_message_id = None
+                self.bot_data.ping_timestamp = None
                 logger.info(f"New cycle started. New baseline: {baseline}")
 
             # Update stored data
@@ -707,19 +730,46 @@ class VotePartyBot(commands.Bot):
                 )
                 if vp_role:
                     try:
-                        await self.tracker_message.channel.send(
+                        ping_msg = await self.tracker_message.channel.send(
                             f"🚨 **{vp_role.mention}** Only **{remaining}** votes left "
                             f"until the Vote Party! Vote now!\\n"
                             f"🔗 https://minecraft-mp.com/server-s349345",
                             allowed_mentions=discord.AllowedMentions(roles=True),
                         )
                         self.bot_data.has_ping_sent = True
+                        self.bot_data.ping_message_id = ping_msg.id
+                        self.bot_data.ping_timestamp = datetime.now(timezone.utc).timestamp()
                         self.bot_data.save()
                         logger.info(f"🔔 VP role pinged! Remaining: {remaining}")
                     except discord.HTTPException as e:
                         logger.error(f"Failed to send ping: {e}")
                 else:
                     logger.warning("VP role not found in guild")
+
+    async def _cleanup_old_ping(self):
+        """Delete old ping message if it's been more than PING_DELETE_SECONDS."""
+        if not self.bot_data.ping_message_id or not self.bot_data.ping_timestamp:
+            return
+
+        now = datetime.now(timezone.utc).timestamp()
+        age = now - self.bot_data.ping_timestamp
+
+        if age >= PING_DELETE_SECONDS:
+            if self.tracker_message:
+                try:
+                    channel = self.tracker_message.channel
+                    ping_msg = await channel.fetch_message(self.bot_data.ping_message_id)
+                    await ping_msg.delete()
+                    logger.info(f"🗑️ Deleted old ping message (age: {age:.0f}s)")
+                except discord.NotFound:
+                    logger.info("Ping message already deleted")
+                except discord.HTTPException as e:
+                    logger.error(f"Failed to delete ping message: {e}")
+
+            # Clear ping data
+            self.bot_data.ping_message_id = None
+            self.bot_data.ping_timestamp = None
+            self.bot_data.save()
 
 
 # ─── Slash Commands ───────────────────────────────────────────────────────────
