@@ -800,7 +800,7 @@ class VotePartyCog(commands.Cog):
     @app_commands.describe(value="Number of remaining votes (0-250)")
     @app_commands.checks.has_permissions(administrator=True)
     async def setremaining(self, interaction: discord.Interaction, value: int):
-        """Manually set the remaining votes."""
+        """Manually set the remaining votes and adjust baseline to persist."""
         await interaction.response.defer(ephemeral=True)
 
         if value < 0 or value > VOTE_GOAL:
@@ -810,34 +810,59 @@ class VotePartyCog(commands.Cog):
             )
             return
 
-        self.bot.bot_data.remaining = value
-        self.bot.bot_data.has_ping_sent = False
-        self.bot.bot_data.save()
+        # Scrape current totals to calculate the correct baseline
+        try:
+            counts, current_total = await self.bot.scraper.scrape_all()
+            
+            # Calculate what baseline should be to make remaining = value
+            # remaining = 250 - (current_total - baseline)
+            # So: baseline = current_total - (250 - value)
+            progress = VOTE_GOAL - value
+            new_baseline = current_total - progress
+            
+            self.bot.bot_data.baseline = new_baseline
+            self.bot.bot_data.remaining = value
+            self.bot.bot_data.site_counts = counts
+            self.bot.bot_data.has_ping_sent = False
+            
+            now = datetime.now(timezone.utc)
+            self.bot.bot_data.last_updated = now.strftime("%Y-%m-%d %H:%M:%S")
+            self.bot.bot_data.last_scrape_time = now.timestamp()
+            self.bot.bot_data.save()
 
-        await self.bot._update_embed()
+            await self.bot._update_embed()
 
-        progress = VOTE_GOAL - value
-        pct = (progress / VOTE_GOAL) * 100
+            pct = (progress / VOTE_GOAL) * 100
 
-        await interaction.followup.send(
-            f"✅ Remaining votes set to **{value}**.\\n"
-            f"Progress: {progress}/{VOTE_GOAL} ({pct:.1f}%)",
-            ephemeral=True,
-        )
+            await interaction.followup.send(
+                f"✅ Remaining votes set to **{value}**.\\n"
+                f"Progress: {progress}/{VOTE_GOAL} ({pct:.1f}%)\\n"
+                f"Baseline adjusted to **{new_baseline}** to persist.",
+                ephemeral=True,
+            )
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ Error: {e}", ephemeral=True
+            )
 
     @voteparty_group.command(
         name="setbaseline",
         description="Set the current total vote sum as the new baseline"
     )
+    @app_commands.describe(value="Optional: Set baseline to a specific number instead of current total")
     @app_commands.checks.has_permissions(administrator=True)
-    async def setbaseline(self, interaction: discord.Interaction):
-        """Set the current total sum as the new baseline."""
+    async def setbaseline(self, interaction: discord.Interaction, value: Optional[int] = None):
+        """Set the baseline to current total or a specific value."""
         await interaction.response.defer(ephemeral=True)
 
         try:
             counts, total = await self.bot.scraper.scrape_all()
             now = datetime.now(timezone.utc)
-            self.bot.bot_data.baseline = total
+            
+            # Use provided value or current total
+            new_baseline = value if value is not None else total
+            
+            self.bot.bot_data.baseline = new_baseline
             self.bot.bot_data.remaining = VOTE_GOAL
             self.bot.bot_data.site_counts = counts
             self.bot.bot_data.has_ping_sent = False
@@ -847,11 +872,18 @@ class VotePartyCog(commands.Cog):
 
             await self.bot._update_embed()
 
-            await interaction.followup.send(
-                f"✅ New baseline set to **{total}**.\\n"
-                f"Vote party reset! {VOTE_GOAL} votes to go.",
-                ephemeral=True,
-            )
+            if value is not None:
+                await interaction.followup.send(
+                    f"✅ Baseline manually set to **{new_baseline}**.\\n"
+                    f"Vote party reset! {VOTE_GOAL} votes to go.",
+                    ephemeral=True,
+                )
+            else:
+                await interaction.followup.send(
+                    f"✅ New baseline set to **{total}**.\\n"
+                    f"Vote party reset! {VOTE_GOAL} votes to go.",
+                    ephemeral=True,
+                )
         except Exception as e:
             await interaction.followup.send(
                 f"❌ Error scraping sites: {e}", ephemeral=True
