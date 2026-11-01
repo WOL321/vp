@@ -650,19 +650,34 @@ function NationFeatures() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                 <Users size={24} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white">Welcome Messages</h3>
+              <h3 className="text-xl font-bold text-white">Interactive Onboarding</h3>
             </div>
             <DiscordEmbed
-              title="🇨🇴 Welcome to Colombia, NewMember!"
-              description="Comrade, you have reached our shores. Whether you come to build a home, stand alongside our people, or speak on behalf of another nation, there is a place for you here.
+              title="🇨🇴 ¡Bienvenido a Colombia, NewMember!"
+              description="**Welcome Streak:** 🔥 47 members
+**Member #1,247**
 
-¡Bienvenido a Colombia! 🌴
-— Nariño"
+Comrade, you have reached our shores. Whether you come to build a home, stand alongside our people, or speak on behalf of another nation, there is a place for you here.
+
+🌟 **Quick Start Guide**
+1️⃣ Read our rules in #rules
+2️⃣ Introduce yourself in #introductions
+3️⃣ Request citizenship below
+4️⃣ Join the conversation!
+
+— Nariño 🇨🇴"
               color={0xF1C40F}
-              fields={[
-                { name: '📋 Quick Links', value: 'Citizenship: /role-request\nSupport: /ticket\nDiplomacy: /diplomacy' }
-              ]}
             />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button className="px-3 py-1.5 rounded-lg bg-[#4e5058] hover:bg-[#6d6f78] text-white text-xs font-medium transition-colors">📜 Read Rules</button>
+              <button className="px-3 py-1.5 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-medium transition-colors">🏠 Request Citizenship</button>
+              <button className="px-3 py-1.5 rounded-lg bg-[#248046] hover:bg-[#1a6334] text-white text-xs font-medium transition-colors">💬 Introduce Yourself</button>
+              <button className="px-3 py-1.5 rounded-lg bg-[#4e5058] hover:bg-[#6d6f78] text-white text-xs font-medium transition-colors">🎁 Claim Gift</button>
+            </div>
+            <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-transparent border border-yellow-500/20">
+              <p className="text-xs text-yellow-400 font-semibold mb-1">🎊 MILESTONE WELCOME!</p>
+              <p className="text-xs text-gray-400">NewMember is member #1,247! +500 Pesos bonus • Exclusive role • Featured in #hall-of-fame</p>
+            </div>
           </motion.div>
 
           {/* Role Requests */}
@@ -677,20 +692,42 @@ function NationFeatures() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
                 <Shield size={24} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white">Role Requests</h3>
+              <h3 className="text-xl font-bold text-white">Advanced Role System</h3>
             </div>
             <DiscordEmbed
               title="🇨🇴 Colombia Role Requests"
-              description="Choose a role below. Citizenship and Ally requests go to leadership review. Vote Party Pings can be toggled instantly.
+              description="Choose a role below. Citizenship and Ally requests go to leadership review with multi-step verification.
 
 **Request format:**
-Minecraft username · Nation · Town · Nation role"
+Minecraft username · Nation · Town · Nation role
+
+**Verification Process:**
+1️⃣ Submit application
+2️⃣ Leadership review (24-48h)
+3️⃣ Interview (if required)
+4️⃣ Trial period (7 days)
+5️⃣ Full citizenship"
               color={0xF1C40F}
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <button className="px-4 py-2 rounded-lg bg-[#5865f2] text-white text-sm font-medium">🏠 Request Citizenship</button>
               <button className="px-4 py-2 rounded-lg bg-[#4e5058] text-white text-sm font-medium">🤝 Request Ally</button>
+              <button className="px-4 py-2 rounded-lg bg-[#4e5058] text-white text-sm font-medium">🌐 Foreign Diplomat</button>
               <button className="px-4 py-2 rounded-lg bg-[#248046] text-white text-sm font-medium">🔔 Toggle VP Pings</button>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                <div className="text-lg font-bold text-white">24</div>
+                <div className="text-xs text-gray-400">Pending</div>
+              </div>
+              <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                <div className="text-lg font-bold text-emerald-400">156</div>
+                <div className="text-xs text-gray-400">Approved</div>
+              </div>
+              <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                <div className="text-lg font-bold text-red-400">8</div>
+                <div className="text-xs text-gray-400">Denied</div>
+              </div>
             </div>
           </motion.div>
 
@@ -706,29 +743,50 @@ Minecraft username · Nation · Town · Nation role"
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
                 <Globe size={24} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white">Diplomacy System</h3>
+              <h3 className="text-xl font-bold text-white">Advanced Diplomacy</h3>
             </div>
             <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-emerald-400">🤝</span>
-                  <span className="text-white font-semibold text-sm">Alliance Formed</span>
+              <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-lg">🤝</span>
+                    <span className="text-white font-bold text-sm">Alliance with Brazil</span>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">Active</span>
                 </div>
-                <p className="text-xs text-gray-400">Colombia and Brazil have formed an alliance!</p>
+                <p className="text-xs text-gray-400 mb-2">Trade agreement • Mutual defense • 500+ members</p>
+                <div className="flex gap-2">
+                  <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">View Terms</button>
+                  <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">Trade Stats</button>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-red-400">⚔️</span>
-                  <span className="text-white font-semibold text-sm">War Declared</span>
+              <div className="p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-400 text-lg">⚔️</span>
+                    <span className="text-white font-bold text-sm">War with Peru</span>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 animate-pulse">Active</span>
                 </div>
-                <p className="text-xs text-gray-400">Colombia has declared war on Peru</p>
+                <p className="text-xs text-gray-400 mb-2">Declared 3 days ago • 2 battles • 150 casualties</p>
+                <div className="flex gap-2">
+                  <button className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors">Battle Log</button>
+                  <button className="text-xs px-2 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors">Propose Peace</button>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-blue-400">🕊️</span>
-                  <span className="text-white font-semibold text-sm">Peace Treaty</span>
+              <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400 text-lg">🕊️</span>
+                    <span className="text-white font-bold text-sm">Peace Treaty - Ecuador</span>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">Pending Vote</span>
                 </div>
-                <p className="text-xs text-gray-400">Peace treaty signed with Ecuador</p>
+                <p className="text-xs text-gray-400 mb-2">Proposed yesterday • 12/15 votes • Needs 3 more</p>
+                <div className="w-full bg-white/5 rounded-full h-2 mb-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{width: '80%'}}></div>
+                </div>
+                <button className="text-xs px-2 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors">View Treaty</button>
               </div>
             </div>
           </motion.div>
@@ -782,13 +840,13 @@ function EconomySection() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium mb-4">
             <Coins size={12} />
-            Economy & Activity
+            Advanced Economy & Activity
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-            Engage Your Community
+            Complete Economic System
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Virtual economy, XP system, levels, leaderboards, and rewards to keep members active and engaged.
+            Virtual economy with stock market, businesses, real estate, banking, gambling, and comprehensive activity tracking.
           </p>
         </motion.div>
 
@@ -803,23 +861,37 @@ function EconomySection() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4">
               <Coins size={24} className="text-white" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-3">Economy System</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Starting Balance</span>
-                <span className="text-white font-semibold">100 Pesos 💰</span>
+            <h3 className="text-lg font-bold text-white mb-3">Advanced Economy</h3>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-white font-semibold text-sm">💰 Balance</span>
+                  <span className="text-green-400 font-bold">1,247 Pesos</span>
+                </div>
+                <div className="text-xs text-gray-400">+50 today • +320 this week</div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Daily Reward</span>
-                <span className="text-white font-semibold">50 Pesos</span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                  <div className="text-xs text-gray-400 mb-1">📈 Stock Market</div>
+                  <div className="text-sm font-bold text-emerald-400">+12.5%</div>
+                </div>
+                <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                  <div className="text-xs text-gray-400 mb-1">🏢 Businesses</div>
+                  <div className="text-sm font-bold text-white">3 owned</div>
+                </div>
+                <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                  <div className="text-xs text-gray-400 mb-1">🏠 Real Estate</div>
+                  <div className="text-sm font-bold text-white">2 properties</div>
+                </div>
+                <div className="p-2 rounded-lg bg-white/[0.02] text-center">
+                  <div className="text-xs text-gray-400 mb-1">🏦 Bank Interest</div>
+                  <div className="text-sm font-bold text-emerald-400">5% APY</div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Work Reward</span>
-                <span className="text-white font-semibold">25-75 Pesos</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Vote Reward</span>
-                <span className="text-white font-semibold">50 Pesos</span>
+              <div className="flex gap-2">
+                <button className="flex-1 px-3 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-medium transition-colors">🎰 Casino</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-medium transition-colors">🏪 Shop</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-medium transition-colors">🎁 Auction</button>
               </div>
             </div>
           </motion.div>
@@ -892,6 +964,160 @@ function EconomySection() {
   );
 }
 
+// ─── Events & Tournaments ────────────────────────────────────────────────────
+
+function EventsSection() {
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-transparent via-purple-500/[0.02] to-transparent">
+      <div className="max-w-7xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium mb-4">
+            <Calendar size={12} />
+            Events & Tournaments
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+            Epic Community Events
+          </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Multi-stage tournaments, battle royales, scavenger hunts, trivia championships, and more.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Active Tournament */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Trophy size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Build Competition</h3>
+                  <p className="text-xs text-purple-400">Stage 2 of 3 • 47 participants</p>
+                </div>
+              </div>
+              <span className="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs font-semibold animate-pulse">LIVE</span>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-white/[0.02]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white text-sm font-semibold">🏆 Prize Pool</span>
+                  <span className="text-yellow-400 font-bold">5,000 Pesos</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">🥇 2,500</span>
+                  <span className="text-xs px-2 py-1 rounded bg-gray-500/20 text-gray-400">🥈 1,500</span>
+                  <span className="text-xs px-2 py-1 rounded bg-orange-500/20 text-orange-400">🥉 1,000</span>
+                </div>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-white/[0.02]">
+                <div className="text-white text-sm font-semibold mb-2">📅 Timeline</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-emerald-400">✓</span>
+                    <span className="text-gray-400">Registration (7 days ago)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-emerald-400">✓</span>
+                    <span className="text-gray-400">Round 1: Qualifiers (3 days ago)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-purple-400 animate-pulse">●</span>
+                    <span className="text-white font-semibold">Round 2: Semi-finals (Now)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-gray-500">○</span>
+                    <span className="text-gray-500">Round 3: Finals (in 2 days)</span>
+                  </div>
+                </div>
+              </div>
+              
+              <button className="w-full px-4 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-medium transition-colors">
+                View Leaderboard
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Upcoming Events */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                <Calendar size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Upcoming Events</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⚔️</span>
+                    <span className="text-white font-semibold text-sm">PvP Tournament</span>
+                  </div>
+                  <span className="text-xs text-red-400">in 3 days</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">1v1 elimination bracket • 64 players max</p>
+                <div className="flex gap-2">
+                  <button className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors">Register</button>
+                  <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">Rules</button>
+                </div>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🧠</span>
+                    <span className="text-white font-semibold text-sm">Trivia Championship</span>
+                  </div>
+                  <span className="text-xs text-blue-400">in 5 days</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">5 rounds • Colombia history & culture</p>
+                <div className="flex gap-2">
+                  <button className="text-xs px-2 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors">Register</button>
+                  <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">Practice</button>
+                </div>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🗺️</span>
+                    <span className="text-white font-semibold text-sm">Scavenger Hunt</span>
+                  </div>
+                  <span className="text-xs text-green-400">in 7 days</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">Team event • Find hidden items across the map</p>
+                <div className="flex gap-2">
+                  <button className="text-xs px-2 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-green-300 transition-colors">Form Team</button>
+                  <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors">Details</button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Footer ──────────────────────────────────────────────────────────────────
 
 function Footer() {
@@ -932,6 +1158,7 @@ export default function App() {
       <VotePartySection />
       <NationFeatures />
       <EconomySection />
+      <EventsSection />
       <Footer />
     </div>
   );

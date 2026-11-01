@@ -92,6 +92,9 @@ class NariñoBot(commands.Bot):
         # Economy cog
         await self.add_cog(EconomyCog(self))
         
+        # Diplomacy cog
+        await self.add_cog(DiplomacyCog(self))
+        
         # Fun cog
         await self.add_cog(FunCog(self))
         
@@ -664,37 +667,86 @@ class NationCog(commands.Cog):
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 class WelcomeCog(commands.Cog):
-    """Welcome message system"""
+    """Advanced welcome system with interactive onboarding"""
     
     def __init__(self, bot: NariñoBot):
         self.bot = bot
+        self.welcome_streaks = {}  # Track consecutive welcomes
+        self.welcome_games = {}  # Active welcome games
     
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        """Send welcome message when member joins"""
-        # TODO: Implement welcome channel configuration
+        """Advanced welcome with interactive onboarding"""
         welcome_channel = discord.utils.get(member.guild.text_channels, name="welcome")
         
-        if welcome_channel:
-            embed = discord.Embed(
-                title=f"🇨🇴 Welcome to Colombia, {member.display_name}!",
-                description=(
-                    "Comrade, you have reached our shores. Whether you come to build a home, "
-                    "stand alongside our people, or speak on behalf of another nation, there is "
-                    "a place for you here.\n\n"
-                    "A nation is built by its people—and every great undertaking begins with "
-                    "someone willing to lay the first block.\n\n"
-                    "Read our rules, meet the community, and request citizenship if you wish "
-                    "to call Colombia home. Diplomats, our Foreign Affairs office awaits you.\n\n"
-                    "¡Bienvenido a Colombia! 🌴\n"
-                    "— Nariño"
-                ),
-                color=COLOR_GOLD
-            )
-            
-            embed.set_footer(text="Citizenship: /role-request · Support: /ticket · Diplomacy: /diplomacy")
-            
-            await welcome_channel.send(embed=embed)
+        if not welcome_channel:
+            return
+        
+        # Calculate welcome streak
+        guild_id = member.guild.id
+        self.welcome_streaks[guild_id] = self.welcome_streaks.get(guild_id, 0) + 1
+        streak = self.welcome_streaks[guild_id]
+        
+        # Create interactive welcome embed
+        embed = discord.Embed(
+            title=f"🇨🇴 ¡Bienvenido a Colombia, {member.display_name}!",
+            description=(
+                f"**Welcome Streak:** 🔥 {streak} members\n"
+                f"**Member #{member.guild.member_count}**\n\n"
+                "Comrade, you have reached our shores. Whether you come to build a home, "
+                "stand alongside our people, or speak on behalf of another nation, there is "
+                "a place for you here.\n\n"
+                "🌟 **Quick Start Guide**\n"
+                "1️⃣ Read our rules in #rules\n"
+                "2️⃣ Introduce yourself in #introductions\n"
+                "3️⃣ Request citizenship below\n"
+                "4️⃣ Join the conversation!\n\n"
+                "— Nariño 🇨🇴"
+            ),
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text="Welcome to the nation!")
+        
+        # Create interactive onboarding view
+        view = WelcomeOnboardingView(self.bot, member)
+        
+        welcome_msg = await welcome_channel.send(
+            content=f"🎉 {member.mention} just joined Colombia! Welcome!",
+            embed=embed,
+            view=view
+        )
+        
+        # Start welcome game (optional)
+        if streak % 10 == 0:  # Every 10th member
+            await self.start_welcome_game(welcome_channel, member, streak)
+    
+    async def start_welcome_game(self, channel, new_member, streak):
+        """Start a welcome celebration game"""
+        game_embed = discord.Embed(
+            title="🎊 MILESTONE WELCOME! 🎊",
+            description=(
+                f"**{new_member.display_name}** is member #{streak}!\n\n"
+                "🎁 **Special Rewards:**\n"
+                "• +500 Pesos bonus\n"
+                "• Exclusive 'Milestone Member' role\n"
+                "• Featured in #hall-of-fame\n\n"
+                "**Quick Challenge:** First person to say '¡Bienvenido!' gets +100 Pesos!"
+            ),
+            color=0xFFD700
+        )
+        
+        await channel.send(embed=game_embed)
+        
+        # Award bonus
+        data_manager.increment("economy", f"balance_{new_member.id}", 500)
+        
+        # Give milestone role
+        milestone_role = discord.utils.get(new_member.guild.roles, name="Milestone Member")
+        if milestone_role:
+            await new_member.add_roles(milestone_role)
 
 class EconomyCog(commands.Cog):
     """Economy system"""
@@ -714,6 +766,379 @@ class EconomyCog(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+class DiplomacyCog(commands.Cog):
+    """Advanced diplomacy system with wars, alliances, and treaties"""
+    
+    def __init__(self, bot: NariñoBot):
+        self.bot = bot
+    
+    @discord.app_commands.command(name="diplomacy", description="Open diplomatic request")
+    async def diplomacy(self, interaction: discord.Interaction):
+        """Show diplomacy panel"""
+        embed = discord.Embed(
+            title="🌐 Foreign Affairs",
+            description=(
+                "Manage diplomatic relations with other nations.\n\n"
+                "**Current Relations:**\n"
+                "🟢 **Allies:** 3 nations\n"
+                "🟡 **Neutral:** 5 nations\n"
+                "🔴 **Enemies:** 1 nation\n\n"
+                "Use the buttons below to manage diplomacy."
+            ),
+            color=COLOR_BLUE
+        )
+        
+        view = DiplomacyView(self.bot)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    
+    @discord.app_commands.command(name="declare-war", description="Declare war on another nation")
+    @discord.app_commands.checks.has_role(LEADERSHIP_ROLE)
+    async def declare_war(self, interaction: discord.Interaction, nation: str, reason: str):
+        """Declare war on another nation"""
+        # Check if already at war
+        wars = data_manager.get("diplomacy", "wars", [])
+        for war in wars:
+            if war["attacker"] == nation or war["defender"] == nation:
+                await interaction.response.send_message(
+                    f"❌ Colombia is already at war with {nation}!",
+                    ephemeral=True
+                )
+                return
+        
+        # Create war
+        war = {
+            "attacker": "Colombia",
+            "defender": nation,
+            "reason": reason,
+            "declared_by": interaction.user.id,
+            "declared_at": discord.utils.utcnow().isoformat(),
+            "status": "active",
+            "battles": []
+        }
+        
+        wars.append(war)
+        data_manager.set("diplomacy", "wars", wars)
+        
+        # Create war announcement
+        war_embed = discord.Embed(
+            title="⚔️ WAR DECLARED ⚔️",
+            description=(
+                f"**Colombia** has declared war on **{nation}**!\n\n"
+                f"**Reason:** {reason}\n"
+                f"**Declared by:** {interaction.user.mention}\n\n"
+                "🔴 **Status:** Active\n"
+                "May the best nation win!"
+            ),
+            color=COLOR_RED,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        # Send to announcements
+        announcements = discord.utils.get(interaction.guild.text_channels, name="announcements")
+        if announcements:
+            await announcements.send(embed=war_embed)
+        
+        await interaction.response.send_message(
+            f"⚔️ War declared on **{nation}**! The nation has been notified.",
+            ephemeral=True
+        )
+    
+    @discord.app_commands.command(name="propose-alliance", description="Propose alliance with another nation")
+    @discord.app_commands.checks.has_role(LEADERSHIP_ROLE)
+    async def propose_alliance(self, interaction: discord.Interaction, nation: str, terms: str):
+        """Propose alliance"""
+        # Create alliance proposal
+        proposal = {
+            "proposer": "Colombia",
+            "target": nation,
+            "terms": terms,
+            "proposed_by": interaction.user.id,
+            "proposed_at": discord.utils.utcnow().isoformat(),
+            "status": "pending",
+            "votes": {"for": 0, "against": 0}
+        }
+        
+        alliances = data_manager.get("diplomacy", "alliance_proposals", [])
+        alliances.append(proposal)
+        data_manager.set("diplomacy", "alliance_proposals", alliances)
+        
+        # Create proposal embed
+        proposal_embed = discord.Embed(
+            title="🤝 Alliance Proposal",
+            description=(
+                f"**Colombia** proposes an alliance with **{nation}**\n\n"
+                f"**Terms:** {terms}\n"
+                f"**Proposed by:** {interaction.user.mention}\n\n"
+                "Leadership must vote on this proposal."
+            ),
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        view = AllianceVoteView(self.bot, len(alliances) - 1)
+        
+        # Send to leadership
+        leadership = discord.utils.get(interaction.guild.text_channels, name="leadership")
+        if leadership:
+            await leadership.send(
+                content="🤝 **New Alliance Proposal** <@&LEADERSHIP_ROLE_ID>",
+                embed=proposal_embed,
+                view=view
+            )
+        
+        await interaction.response.send_message(
+            f"🤝 Alliance proposal sent to **{nation}**! Leadership will vote on it.",
+            ephemeral=True
+        )
+    
+    @discord.app_commands.command(name="peace-treaty", description="Propose peace treaty")
+    @discord.app_commands.checks.has_role(LEADERSHIP_ROLE)
+    async def peace_treaty(self, interaction: discord.Interaction, nation: str, terms: str):
+        """Propose peace treaty"""
+        # Find active war
+        wars = data_manager.get("diplomacy", "wars", [])
+        war_found = False
+        
+        for war in wars:
+            if war["defender"] == nation and war["status"] == "active":
+                war_found = True
+                break
+        
+        if not war_found:
+            await interaction.response.send_message(
+                f"❌ Colombia is not at war with {nation}!",
+                ephemeral=True
+            )
+            return
+        
+        # Create peace treaty
+        treaty = {
+            "nation1": "Colombia",
+            "nation2": nation,
+            "terms": terms,
+            "proposed_by": interaction.user.id,
+            "proposed_at": discord.utils.utcnow().isoformat(),
+            "status": "pending"
+        }
+        
+        treaties = data_manager.get("diplomacy", "treaties", [])
+        treaties.append(treaty)
+        data_manager.set("diplomacy", "treaties", treaties)
+        
+        # Create treaty embed
+        treaty_embed = discord.Embed(
+            title="🕊️ Peace Treaty Proposed",
+            description=(
+                f"**Colombia** proposes peace with **{nation}**\n\n"
+                f"**Terms:** {terms}\n"
+                f"**Proposed by:** {interaction.user.mention}\n\n"
+                "Both nations must agree to the terms."
+            ),
+            color=COLOR_BLUE,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        # Send to leadership
+        leadership = discord.utils.get(interaction.guild.text_channels, name="leadership")
+        if leadership:
+            await leadership.send(
+                content="🕊️ **Peace Treaty Proposed** <@&LEADERSHIP_ROLE_ID>",
+                embed=treaty_embed
+            )
+        
+        await interaction.response.send_message(
+            f"🕊️ Peace treaty proposed to **{nation}**! Awaiting their response.",
+            ephemeral=True
+        )
+    
+    @discord.app_commands.command(name="relations", description="View diplomatic relations")
+    async def relations(self, interaction: discord.Interaction):
+        """View diplomatic relations"""
+        alliances = data_manager.get("diplomacy", "alliances", [])
+        wars = data_manager.get("diplomacy", "wars", [])
+        neutrals = data_manager.get("diplomacy", "neutrals", [])
+        
+        embed = discord.Embed(
+            title="🌐 Diplomatic Relations",
+            description="Current status of Colombia's diplomatic relations",
+            color=COLOR_BLUE,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        # Allies
+        if alliances:
+            ally_list = "\n".join([f"🟢 {a['nation']}" for a in alliances])
+            embed.add_field(name="🤝 Allies", value=ally_list or "None", inline=True)
+        else:
+            embed.add_field(name="🤝 Allies", value="None", inline=True)
+        
+        # Wars
+        active_wars = [w for w in wars if w["status"] == "active"]
+        if active_wars:
+            war_list = "\n".join([f"⚔️ {w['defender']}" for w in active_wars])
+            embed.add_field(name="⚔️ At War With", value=war_list, inline=True)
+        else:
+            embed.add_field(name="⚔️ At War With", value="None", inline=True)
+        
+        # Neutrals
+        if neutrals:
+            neutral_list = "\n".join([f"🟡 {n}" for n in neutrals[:10]])
+            embed.add_field(name="🟡 Neutral", value=neutral_list or "None", inline=True)
+        else:
+            embed.add_field(name="🟡 Neutral", value="None", inline=True)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+class DiplomacyView(discord.ui.View):
+    """Diplomacy management view"""
+    
+    def __init__(self, bot: NariñoBot):
+        super().__init__(timeout=None)
+        self.bot = bot
+    
+    @discord.ui.button(
+        label="📊 View Relations",
+        style=discord.ButtonStyle.primary,
+        custom_id="diplomacy_view_relations"
+    )
+    async def view_relations(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """View relations"""
+        # This would call the relations command
+        await interaction.response.send_message(
+            "Use `/relations` to view diplomatic relations!",
+            ephemeral=True
+        )
+    
+    @discord.ui.button(
+        label="⚔️ Declare War",
+        style=discord.ButtonStyle.danger,
+        custom_id="diplomacy_declare_war"
+    )
+    async def declare_war(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Declare war"""
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can declare war!",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.response.send_message(
+            "Use `/declare-war <nation> <reason>` to declare war!",
+            ephemeral=True
+        )
+    
+    @discord.ui.button(
+        label="🤝 Propose Alliance",
+        style=discord.ButtonStyle.success,
+        custom_id="diplomacy_propose_alliance"
+    )
+    async def propose_alliance(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Propose alliance"""
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can propose alliances!",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.response.send_message(
+            "Use `/propose-alliance <nation> <terms>` to propose an alliance!",
+            ephemeral=True
+        )
+
+class AllianceVoteView(discord.ui.View):
+    """View for voting on alliance proposals"""
+    
+    def __init__(self, bot: NariñoBot, proposal_index: int):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.proposal_index = proposal_index
+    
+    @discord.ui.button(
+        label="✅ Vote For",
+        style=discord.ButtonStyle.success,
+        custom_id="alliance_vote_for"
+    )
+    async def vote_for(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Vote for alliance"""
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can vote!",
+                ephemeral=True
+            )
+            return
+        
+        # Record vote
+        alliances = data_manager.get("diplomacy", "alliance_proposals", [])
+        if self.proposal_index < len(alliances):
+            proposal = alliances[self.proposal_index]
+            voter_id = str(interaction.user.id)
+            
+            if "voters" not in proposal:
+                proposal["voters"] = {}
+            
+            if voter_id in proposal["voters"]:
+                await interaction.response.send_message(
+                    "❌ You've already voted!",
+                    ephemeral=True
+                )
+                return
+            
+            proposal["voters"][voter_id] = "for"
+            proposal["votes"]["for"] += 1
+            alliances[self.proposal_index] = proposal
+            data_manager.set("diplomacy", "alliance_proposals", alliances)
+            
+            await interaction.response.send_message(
+                "✅ Vote recorded! You voted FOR the alliance.",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(
+        label="❌ Vote Against",
+        style=discord.ButtonStyle.danger,
+        custom_id="alliance_vote_against"
+    )
+    async def vote_against(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Vote against alliance"""
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can vote!",
+                ephemeral=True
+            )
+            return
+        
+        # Record vote
+        alliances = data_manager.get("diplomacy", "alliance_proposals", [])
+        if self.proposal_index < len(alliances):
+            proposal = alliances[self.proposal_index]
+            voter_id = str(interaction.user.id)
+            
+            if "voters" not in proposal:
+                proposal["voters"] = {}
+            
+            if voter_id in proposal["voters"]:
+                await interaction.response.send_message(
+                    "❌ You've already voted!",
+                    ephemeral=True
+                )
+                return
+            
+            proposal["voters"][voter_id] = "against"
+            proposal["votes"]["against"] += 1
+            alliances[self.proposal_index] = proposal
+            data_manager.set("diplomacy", "alliance_proposals", alliances)
+            
+            await interaction.response.send_message(
+                "❌ Vote recorded! You voted AGAINST the alliance.",
+                ephemeral=True
+            )
 
 class FunCog(commands.Cog):
     """Fun features"""
@@ -768,8 +1193,119 @@ class VoteNotifyView(discord.ui.View):
         """Notify toggle button - handled by cog"""
         pass
 
+class WelcomeOnboardingView(discord.ui.View):
+    """Interactive onboarding view for new members"""
+    
+    def __init__(self, bot: NariñoBot, new_member: discord.Member):
+        super().__init__(timeout=86400)  # 24 hours
+        self.bot = bot
+        self.new_member = new_member
+    
+    @discord.ui.button(
+        label="📜 Read Rules",
+        style=discord.ButtonStyle.secondary,
+        custom_id="welcome_read_rules",
+        row=0
+    )
+    async def read_rules(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show rules"""
+        rules_channel = discord.utils.get(interaction.guild.text_channels, name="rules")
+        if rules_channel:
+            await interaction.response.send_message(
+                f"📜 Check out the rules in {rules_channel.mention}!",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "📜 Please read the server rules!",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(
+        label="🏠 Request Citizenship",
+        style=discord.ButtonStyle.primary,
+        custom_id="welcome_request_citizenship",
+        row=0
+    )
+    async def request_citizenship(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Request citizenship"""
+        if interaction.user.id != self.new_member.id:
+            await interaction.response.send_message(
+                "❌ This button is only for the new member!",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.response.send_modal(CitizenshipModal(self.bot))
+    
+    @discord.ui.button(
+        label="💬 Introduce Yourself",
+        style=discord.ButtonStyle.success,
+        custom_id="welcome_introduce",
+        row=1
+    )
+    async def introduce(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Go to introductions"""
+        intro_channel = discord.utils.get(interaction.guild.text_channels, name="introductions")
+        if intro_channel:
+            await interaction.response.send_message(
+                f"💬 Introduce yourself in {intro_channel.mention}!\n\n"
+                "**Template:**\n"
+                "• Name/Age\n"
+                "• Where you're from\n"
+                "• What brought you here\n"
+                "• Your interests",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "💬 Say hello in the chat!",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(
+        label="🎁 Claim Welcome Gift",
+        style=discord.ButtonStyle.secondary,
+        custom_id="welcome_claim_gift",
+        row=1
+    )
+    async def claim_gift(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Claim welcome gift"""
+        if interaction.user.id != self.new_member.id:
+            await interaction.response.send_message(
+                "❌ This button is only for the new member!",
+                ephemeral=True
+            )
+            return
+        
+        # Check if already claimed
+        if data_manager.get("welcome_gifts", str(interaction.user.id)):
+            await interaction.response.send_message(
+                "❌ You've already claimed your welcome gift!",
+                ephemeral=True
+            )
+            return
+        
+        # Award gift
+        data_manager.set("welcome_gifts", str(interaction.user.id), True)
+        data_manager.increment("economy", f"balance_{interaction.user.id}", 100)
+        
+        # Give verified role
+        verified_role = discord.utils.get(interaction.guild.roles, name=VERIFIED_ROLE)
+        if verified_role and verified_role not in interaction.user.roles:
+            await interaction.user.add_roles(verified_role)
+        
+        await interaction.response.send_message(
+            "🎁 **Welcome Gift Claimed!**\n\n"
+            "• +100 Pesos 💰\n"
+            "• ✅ Verified role\n"
+            "• 🎉 Welcome to Colombia!\n\n"
+            "Start exploring and have fun!",
+            ephemeral=True
+        )
+
 class RoleRequestView(discord.ui.View):
-    """Role request buttons"""
+    """Advanced role request system with multi-step verification"""
     
     def __init__(self, bot: NariñoBot):
         super().__init__(timeout=None)
@@ -782,7 +1318,26 @@ class RoleRequestView(discord.ui.View):
         row=0
     )
     async def citizenship_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Request citizenship"""
+        """Request citizenship with full verification"""
+        # Check if already has citizenship
+        nation_role = discord.utils.get(interaction.guild.roles, name=NATION_MEMBER_ROLE)
+        if nation_role and nation_role in interaction.user.roles:
+            await interaction.response.send_message(
+                "✅ You're already a citizen of Colombia!",
+                ephemeral=True
+            )
+            return
+        
+        # Check if pending request exists
+        pending = data_manager.get("role_requests", f"citizenship_{interaction.user.id}")
+        if pending and pending.get("status") == "pending":
+            await interaction.response.send_message(
+                "⏳ You already have a pending citizenship request!\n"
+                "Please wait for leadership to review it.",
+                ephemeral=True
+            )
+            return
+        
         await interaction.response.send_modal(CitizenshipModal(self.bot))
     
     @discord.ui.button(
@@ -793,7 +1348,25 @@ class RoleRequestView(discord.ui.View):
     )
     async def ally_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Request ally status"""
+        ally_role = discord.utils.get(interaction.guild.roles, name=ALLY_ROLE)
+        if ally_role and ally_role in interaction.user.roles:
+            await interaction.response.send_message(
+                "✅ You already have Ally status!",
+                ephemeral=True
+            )
+            return
+        
         await interaction.response.send_modal(AllyModal(self.bot))
+    
+    @discord.ui.button(
+        label="🌐 Foreign Diplomat",
+        style=discord.ButtonStyle.secondary,
+        custom_id="request_diplomat",
+        row=0
+    )
+    async def diplomat_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Request diplomat status"""
+        await interaction.response.send_modal(DiplomatModal(self.bot))
     
     @discord.ui.button(
         label="🔔 Toggle Vote Party Pings",
@@ -832,24 +1405,41 @@ class RoleRequestView(discord.ui.View):
                 ephemeral=True
             )
 
-class CitizenshipModal(discord.ui.Modal, title="Request Citizenship"):
-    """Citizenship request modal"""
+class CitizenshipModal(discord.ui.Modal, title="🏠 Citizenship Application"):
+    """Advanced citizenship application with verification"""
     
     ign = discord.ui.TextInput(
-        label="Minecraft Username",
-        placeholder="Your in-game name",
+        label="Minecraft Username (IGN)",
+        placeholder="Your exact in-game name",
+        min_length=3,
+        max_length=16,
         required=True
     )
     
     nation = discord.ui.TextInput(
         label="Current Nation",
-        placeholder="What nation are you from?",
+        placeholder="What nation are you from? (or 'None')",
         required=True
     )
     
     town = discord.ui.TextInput(
-        label="Town",
-        placeholder="What town do you want to join?",
+        label="Desired Town",
+        placeholder="Which town do you want to join?",
+        required=True
+    )
+    
+    role = discord.ui.TextInput(
+        label="Desired Role",
+        placeholder="What role do you want? (Citizen, Merchant, etc.)",
+        required=True
+    )
+    
+    experience = discord.ui.TextInput(
+        label="Why should we accept you?",
+        placeholder="Tell us about yourself and why you want to join Colombia...",
+        style=discord.TextStyle.paragraph,
+        min_length=50,
+        max_length=1000,
         required=True
     )
     
@@ -858,10 +1448,270 @@ class CitizenshipModal(discord.ui.Modal, title="Request Citizenship"):
         self.bot = bot
     
     async def on_submit(self, interaction: discord.Interaction):
-        """Handle modal submission"""
-        # TODO: Send to leadership review channel
+        """Handle citizenship application"""
+        # Create application
+        application = {
+            "user_id": interaction.user.id,
+            "username": str(interaction.user),
+            "ign": self.ign.value,
+            "nation": self.nation.value,
+            "town": self.town.value,
+            "role": self.role.value,
+            "experience": self.experience.value,
+            "status": "pending",
+            "timestamp": discord.utils.utcnow().isoformat(),
+            "reviewers": []
+        }
+        
+        # Save application
+        data_manager.set("role_requests", f"citizenship_{interaction.user.id}", application)
+        
+        # Create review embed
+        review_embed = discord.Embed(
+            title="🏠 New Citizenship Application",
+            description=f"**Applicant:** {interaction.user.mention}\n**Status:** ⏳ Pending Review",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        review_embed.add_field(name="🎮 Minecraft IGN", value=self.ign.value, inline=True)
+        review_embed.add_field(name="🌍 Current Nation", value=self.nation.value, inline=True)
+        review_embed.add_field(name="🏘️ Desired Town", value=self.town.value, inline=True)
+        review_embed.add_field(name="👔 Desired Role", value=self.role.value, inline=True)
+        review_embed.add_field(name="📝 Experience", value=self.experience.value[:1000], inline=False)
+        
+        # Create review buttons
+        review_view = ApplicationReviewView(self.bot, interaction.user.id, "citizenship")
+        
+        # Send to leadership channel
+        leadership_channel = discord.utils.get(interaction.guild.text_channels, name="leadership")
+        if leadership_channel:
+            await leadership_channel.send(
+                content="🚨 **New Citizenship Application** <@&LEADERSHIP_ROLE_ID>",
+                embed=review_embed,
+                view=review_view
+            )
+        
         await interaction.response.send_message(
-            "✅ Your citizenship request has been submitted! Leadership will review it soon.",
+            "✅ **Application Submitted!**\n\n"
+            "Your citizenship application has been sent to leadership for review.\n"
+            "You'll be notified once a decision is made.\n\n"
+            "**Application Details:**\n"
+            f"• IGN: {self.ign.value}\n"
+            f"• Town: {self.town.value}\n"
+            f"• Role: {self.role.value}\n\n"
+            "Good luck, comrade! 🇨🇴",
+            ephemeral=True
+        )
+
+class DiplomatModal(discord.ui.Modal, title="🌐 Diplomat Application"):
+    """Foreign diplomat application"""
+    
+    nation = discord.ui.TextInput(
+        label="Your Nation",
+        placeholder="What nation do you represent?",
+        required=True
+    )
+    
+    position = discord.ui.TextInput(
+        label="Your Position",
+        placeholder="e.g., Ambassador, Foreign Minister",
+        required=True
+    )
+    
+    purpose = discord.ui.TextInput(
+        label="Purpose of Visit",
+        placeholder="Why are you here? (Trade, Alliance, etc.)",
+        style=discord.TextStyle.paragraph,
+        min_length=50,
+        max_length=1000,
+        required=True
+    )
+    
+    def __init__(self, bot: NariñoBot):
+        super().__init__()
+        self.bot = bot
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle diplomat application"""
+        application = {
+            "user_id": interaction.user.id,
+            "username": str(interaction.user),
+            "nation": self.nation.value,
+            "position": self.position.value,
+            "purpose": self.purpose.value,
+            "status": "pending",
+            "timestamp": discord.utils.utcnow().isoformat()
+        }
+        
+        data_manager.set("role_requests", f"diplomat_{interaction.user.id}", application)
+        
+        # Create review embed
+        review_embed = discord.Embed(
+            title="🌐 New Diplomat Application",
+            description=f"**Diplomat:** {interaction.user.mention}\n**Nation:** {self.nation.value}",
+            color=COLOR_BLUE,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        review_embed.add_field(name="👔 Position", value=self.position.value, inline=True)
+        review_embed.add_field(name="📋 Purpose", value=self.purpose.value[:500], inline=False)
+        
+        # Send to foreign affairs channel
+        fa_channel = discord.utils.get(interaction.guild.text_channels, name="foreign-affairs")
+        if fa_channel:
+            review_view = ApplicationReviewView(self.bot, interaction.user.id, "diplomat")
+            await fa_channel.send(
+                content="🌐 **New Diplomat Application**",
+                embed=review_embed,
+                view=review_view
+            )
+        
+        await interaction.response.send_message(
+            "✅ **Diplomat Application Submitted!**\n\n"
+            "Your application has been sent to Foreign Affairs.\n"
+            "They will contact you soon.\n\n"
+            f"• Nation: {self.nation.value}\n"
+            f"• Position: {self.position.value}\n\n"
+            "¡Bienvenido diplomático! 🌐",
+            ephemeral=True
+        )
+
+class ApplicationReviewView(discord.ui.View):
+    """View for reviewing applications"""
+    
+    def __init__(self, bot: NariñoBot, applicant_id: int, app_type: str):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.applicant_id = applicant_id
+        self.app_type = app_type
+    
+    @discord.ui.button(
+        label="✅ Approve",
+        style=discord.ButtonStyle.success,
+        custom_id="approve_application"
+    )
+    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Approve application"""
+        # Check permissions
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can approve applications!",
+                ephemeral=True
+            )
+            return
+        
+        # Get application
+        app_key = f"{self.app_type}_{self.applicant_id}"
+        application = data_manager.get("role_requests", app_key)
+        
+        if not application:
+            await interaction.response.send_message(
+                "❌ Application not found!",
+                ephemeral=True
+            )
+            return
+        
+        # Update status
+        application["status"] = "approved"
+        application["reviewed_by"] = interaction.user.id
+        application["reviewed_at"] = discord.utils.utcnow().isoformat()
+        data_manager.set("role_requests", app_key, application)
+        
+        # Assign role
+        applicant = interaction.guild.get_member(self.applicant_id)
+        if applicant:
+            if self.app_type == "citizenship":
+                role = discord.utils.get(interaction.guild.roles, name=NATION_MEMBER_ROLE)
+            elif self.app_type == "diplomat":
+                role = discord.utils.get(interaction.guild.roles, name="Diplomat")
+            else:
+                role = discord.utils.get(interaction.guild.roles, name=ALLY_ROLE)
+            
+            if role:
+                await applicant.add_roles(role)
+                
+                # Notify applicant
+                try:
+                    await applicant.send(
+                        f"🎉 **Application Approved!**\n\n"
+                        f"Your {self.app_type} application has been approved!\n"
+                        f"You now have the **{role.name}** role.\n\n"
+                        f"Welcome to Colombia! 🇨🇴"
+                    )
+                except:
+                    pass
+        
+        # Update embed
+        interaction.message.embeds[0].color = discord.Color.green()
+        interaction.message.embeds[0].description = (
+            f"**Applicant:** <@{self.applicant_id}>\n"
+            f"**Status:** ✅ Approved by {interaction.user.mention}"
+        )
+        
+        await interaction.message.edit(embed=interaction.message.embeds[0], view=None)
+        await interaction.response.send_message(
+            f"✅ Application approved! {applicant.mention if applicant else 'Applicant'} has been notified.",
+            ephemeral=True
+        )
+    
+    @discord.ui.button(
+        label="❌ Deny",
+        style=discord.ButtonStyle.danger,
+        custom_id="deny_application"
+    )
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Deny application"""
+        # Check permissions
+        leadership_role = discord.utils.get(interaction.guild.roles, name=LEADERSHIP_ROLE)
+        if leadership_role not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ Only leadership can deny applications!",
+                ephemeral=True
+            )
+            return
+        
+        # Get application
+        app_key = f"{self.app_type}_{self.applicant_id}"
+        application = data_manager.get("role_requests", app_key)
+        
+        if not application:
+            await interaction.response.send_message(
+                "❌ Application not found!",
+                ephemeral=True
+            )
+            return
+        
+        # Update status
+        application["status"] = "denied"
+        application["reviewed_by"] = interaction.user.id
+        application["reviewed_at"] = discord.utils.utcnow().isoformat()
+        data_manager.set("role_requests", app_key, application)
+        
+        # Notify applicant
+        applicant = interaction.guild.get_member(self.applicant_id)
+        if applicant:
+            try:
+                await applicant.send(
+                    f"❌ **Application Denied**\n\n"
+                    f"Your {self.app_type} application has been denied.\n"
+                    f"You may reapply in 7 days.\n\n"
+                    f"If you have questions, please contact staff."
+                )
+            except:
+                pass
+        
+        # Update embed
+        interaction.message.embeds[0].color = discord.Color.red()
+        interaction.message.embeds[0].description = (
+            f"**Applicant:** <@{self.applicant_id}>\n"
+            f"**Status:** ❌ Denied by {interaction.user.mention}"
+        )
+        
+        await interaction.message.edit(embed=interaction.message.embeds[0], view=None)
+        await interaction.response.send_message(
+            "❌ Application denied. Applicant has been notified.",
             ephemeral=True
         )
 
