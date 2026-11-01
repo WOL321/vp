@@ -18,7 +18,11 @@ from config import (
     PING_DELETE_SECONDS, MAX_VOTES_PER_CYCLE,
     NATION_MEMBER_ROLE, ALLY_ROLE, VP_ROLE, VERIFIED_ROLE,
     TICKET_CATEGORY_NAME, TICKET_STAFF_ROLE,
-    COLOR_GOLD, COLOR_BLUE, COLOR_RED
+    COLOR_GOLD, COLOR_BLUE, COLOR_RED,
+    # DiplomaticaMC specific
+    STARTING_GOLD, VOTE_REWARD_GOLD, DAILY_REWARD_GOLD, WORK_REWARD_GOLD,
+    TOWN_CREATION_COST, NATION_CREATION_COST, TOWN_CLAIM_COST,
+    INACTIVITY_WARNING_DAYS, INACTIVITY_DELETION_DAYS
 )
 from core.i18n import i18n
 from core.data_manager import data_manager
@@ -89,11 +93,20 @@ class NariñoBot(commands.Bot):
         # Welcome cog
         await self.add_cog(WelcomeCog(self))
         
-        # Economy cog
+        # Economy cog (Gold Standard)
         await self.add_cog(EconomyCog(self))
         
         # Diplomacy cog
         await self.add_cog(DiplomacyCog(self))
+        
+        # Towny cog (DiplomaticaMC integration)
+        await self.add_cog(TownyCog(self))
+        
+        # SiegeWar cog
+        await self.add_cog(SiegeWarCog(self))
+        
+        # Inactivity cog
+        await self.add_cog(InactivityCog(self))
         
         # Fun cog
         await self.add_cog(FunCog(self))
@@ -749,23 +762,203 @@ class WelcomeCog(commands.Cog):
             await new_member.add_roles(milestone_role)
 
 class EconomyCog(commands.Cog):
-    """Economy system"""
+    """Advanced economy system - Gold Standard (DiplomaticaMC)"""
     
     def __init__(self, bot: NariñoBot):
         self.bot = bot
     
-    @discord.app_commands.command(name="balance", description="Check your balance")
+    @discord.app_commands.command(name="balance", description="Check your gold holdings")
     async def balance(self, interaction: discord.Interaction):
-        """Check balance"""
-        balance = data_manager.get("economy", f"balance_{interaction.user.id}", 100)
+        """Check gold balance"""
+        gold = data_manager.get("economy", f"gold_{interaction.user.id}", 0)
+        
+        # Calculate stacks and ingots
+        stacks = gold // 64
+        ingots = gold % 64
         
         embed = discord.Embed(
-            title="💰 Your Balance",
-            description=f"You have **{balance}** Pesos 💰",
-            color=COLOR_GOLD
+            title="🪙 Your Gold Holdings",
+            description=f"You have **{gold}** gold ingots",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
         )
         
+        if stacks > 0:
+            embed.add_field(name="📦 Stacks", value=f"{stacks} stacks", inline=True)
+        embed.add_field(name="🪙 Ingots", value=f"{ingots} ingots", inline=True)
+        
+        # Show town/nation info if they have one
+        town = data_manager.get("towny", f"town_{interaction.user.id}")
+        if town:
+            town_balance = data_manager.get("towny", f"town_balance_{town}", 0)
+            embed.add_field(name="🏰 Town Treasury", value=f"{town_balance} gold", inline=False)
+        
+        embed.set_footer(text="Gold is the currency of DiplomaticaMC")
+        
         await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @discord.app_commands.command(name="daily", description="Claim your daily gold reward")
+    async def daily(self, interaction: discord.Interaction):
+        """Claim daily gold reward"""
+        last_claim = data_manager.get("economy", f"daily_{interaction.user.id}", 0)
+        now = discord.utils.utcnow().timestamp()
+        
+        if now - last_claim < 86400:  # 24 hours
+            remaining = int(86400 - (now - last_claim))
+            hours = remaining // 3600
+            minutes = (remaining % 3600) // 60
+            
+            await interaction.response.send_message(
+                f"⏰ You've already claimed your daily reward!\n"
+                f"Come back in **{hours}h {minutes}m**.",
+                ephemeral=True
+            )
+            return
+        
+        # Award daily gold
+        data_manager.set("economy", f"daily_{interaction.user.id}", now)
+        data_manager.increment("economy", f"gold_{interaction.user.id}", DAILY_REWARD_GOLD)
+        
+        new_balance = data_manager.get("economy", f"gold_{interaction.user.id}", 0)
+        
+        embed = discord.Embed(
+            title="✅ Daily Reward Claimed!",
+            description=f"You received **{DAILY_REWARD_GOLD}** gold ingots! 🪙",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="💰 New Balance", value=f"{new_balance} gold", inline=True)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @discord.app_commands.command(name="work", description="Work to earn gold")
+    async def work(self, interaction: discord.Interaction):
+        """Work for gold"""
+        import random
+        
+        last_work = data_manager.get("economy", f"work_{interaction.user.id}", 0)
+        now = discord.utils.utcnow().timestamp()
+        
+        if now - last_work < 3600:  # 1 hour cooldown
+            remaining = int(3600 - (now - last_work))
+            minutes = remaining // 60
+            
+            await interaction.response.send_message(
+                f"⏰ You need to rest! Try again in **{minutes}m**.",
+                ephemeral=True
+            )
+            return
+        
+        # Random reward between 4-16 gold
+        reward = random.randint(4, 16)
+        
+        data_manager.set("economy", f"work_{interaction.user.id}", now)
+        data_manager.increment("economy", f"gold_{interaction.user.id}", reward)
+        
+        new_balance = data_manager.get("economy", f"gold_{interaction.user.id}", 0)
+        
+        # Random work messages
+        work_messages = [
+            "💼 You mined gold in the mountains!",
+            "🏗️ You worked on a construction project!",
+            "🌾 You harvested and sold crops!",
+            "🎣 You went fishing and sold the catch!",
+            "⚒️ You crafted and sold items!",
+            "🏪 You ran your shop for the day!",
+        ]
+        
+        embed = discord.Embed(
+            title="💼 Work Complete!",
+            description=f"{random.choice(work_messages)}\n\nYou earned **{reward}** gold ingots! 🪙",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="💰 New Balance", value=f"{new_balance} gold", inline=True)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @discord.app_commands.command(name="pay", description="Pay gold to another player")
+    @discord.app_commands.describe(user="Player to pay", amount="Amount of gold to pay")
+    async def pay(self, interaction: discord.Interaction, user: discord.Member, amount: int):
+        """Pay gold to another player"""
+        if amount <= 0:
+            await interaction.response.send_message(
+                "❌ Amount must be positive!",
+                ephemeral=True
+            )
+            return
+        
+        sender_balance = data_manager.get("economy", f"gold_{interaction.user.id}", 0)
+        
+        if sender_balance < amount:
+            await interaction.response.send_message(
+                f"❌ You don't have enough gold! You have **{sender_balance}** gold.",
+                ephemeral=True
+            )
+            return
+        
+        # Transfer gold
+        data_manager.decrement("economy", f"gold_{interaction.user.id}", amount)
+        data_manager.increment("economy", f"gold_{user.id}", amount)
+        
+        new_sender_balance = data_manager.get("economy", f"gold_{interaction.user.id}", 0)
+        new_receiver_balance = data_manager.get("economy", f"gold_{user.id}", 0)
+        
+        embed = discord.Embed(
+            title="✅ Payment Sent!",
+            description=f"You paid **{amount}** gold to {user.mention}",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="💰 Your Balance", value=f"{new_sender_balance} gold", inline=True)
+        embed.add_field(name="💰 Their Balance", value=f"{new_receiver_balance} gold", inline=True)
+        
+        await interaction.response.send_message(embed=embed)
+        
+        # Notify receiver
+        try:
+            await user.send(
+                f"💰 You received **{amount}** gold from {interaction.user.mention}!\n"
+                f"Your new balance: **{new_receiver_balance}** gold"
+            )
+        except:
+            pass
+    
+    @discord.app_commands.command(name="top-gold", description="View top gold holders")
+    async def top_gold(self, interaction: discord.Interaction):
+        """View top gold holders"""
+        # Get all players with gold
+        players = []
+        for key in data_manager.get_all_keys("economy"):
+            if key.startswith("gold_"):
+                user_id = int(key.replace("gold_", ""))
+                gold = data_manager.get("economy", key, 0)
+                if gold > 0:
+                    players.append((user_id, gold))
+        
+        # Sort by gold
+        players.sort(key=lambda x: x[1], reverse=True)
+        top_10 = players[:10]
+        
+        embed = discord.Embed(
+            title="🏆 Top Gold Holders",
+            description="The wealthiest players on DiplomaticaMC",
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        if not top_10:
+            embed.description = "No players have gold yet!"
+        else:
+            for i, (user_id, gold) in enumerate(top_10, 1):
+                medal = ["🥇", "🥈", "🥉"][i-1] if i <= 3 else f"**#{i}**"
+                embed.add_field(
+                    name=f"{medal} <@{user_id}>",
+                    value=f"{gold:,} gold",
+                    inline=False
+                )
+        
+        await interaction.response.send_message(embed=embed)
 
 class DiplomacyCog(commands.Cog):
     """Advanced diplomacy system with wars, alliances, and treaties"""
@@ -1139,6 +1332,601 @@ class AllianceVoteView(discord.ui.View):
                 "❌ Vote recorded! You voted AGAINST the alliance.",
                 ephemeral=True
             )
+
+class TownyCog(commands.Cog):
+    """Towny integration for DiplomaticaMC"""
+    
+    def __init__(self, bot: NariñoBot):
+        self.bot = bot
+    
+    @discord.app_commands.command(name="town", description="Manage your town")
+    @discord.app_commands.describe(action="Action to perform: info, create, join, leave")
+    @discord.app_commands.describe(name="Town name (for create/join)")
+    async def town(self, interaction: discord.Interaction, action: str, name: str = None):
+        """Manage town"""
+        user_id = interaction.user.id
+        
+        if action == "info":
+            # Show town info
+            town = data_manager.get("towny", f"town_{user_id}")
+            
+            if not town:
+                await interaction.response.send_message(
+                    "❌ You're not in a town!\n"
+                    f"Use `/town create <name>` to create one (costs {TOWN_CREATION_COST} gold)\n"
+                    f"Or `/town join <name>` to join an existing town",
+                    ephemeral=True
+                )
+                return
+            
+            town_balance = data_manager.get("towny", f"town_balance_{town}", 0)
+            town_members = data_manager.get("towny", f"town_members_{town}", [])
+            town_chunks = data_manager.get("towny", f"town_chunks_{town}", 1)
+            
+            embed = discord.Embed(
+                title=f"🏰 {town}",
+                description=f"Your town on DiplomaticaMC",
+                color=COLOR_GOLD,
+                timestamp=discord.utils.utcnow()
+            )
+            
+            embed.add_field(name="💰 Treasury", value=f"{town_balance} gold", inline=True)
+            embed.add_field(name="👥 Members", value=f"{len(town_members)}", inline=True)
+            embed.add_field(name="🗺️ Chunks", value=f"{town_chunks}", inline=True)
+            
+            # Show members
+            if town_members:
+                member_list = "\n".join([f"<@{m}>" for m in town_members[:10]])
+                if len(town_members) > 10:
+                    member_list += f"\n... and {len(town_members) - 10} more"
+                embed.add_field(name="👥 Town Members", value=member_list, inline=False)
+            
+            embed.set_footer(text=f"Mayor: <@{town_members[0]}>")
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        elif action == "create":
+            if not name:
+                await interaction.response.send_message(
+                    "❌ Please specify a town name!\n"
+                    "Usage: `/town create <name>`",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if already in a town
+            if data_manager.get("towny", f"town_{user_id}"):
+                await interaction.response.send_message(
+                    "❌ You're already in a town! Use `/town leave` first.",
+                    ephemeral=True
+                )
+                return
+            
+            # Check gold
+            gold = data_manager.get("economy", f"gold_{user_id}", 0)
+            if gold < TOWN_CREATION_COST:
+                await interaction.response.send_message(
+                    f"❌ You need **{TOWN_CREATION_COST}** gold to create a town!\n"
+                    f"You have **{gold}** gold.",
+                    ephemeral=True
+                )
+                return
+            
+            # Create town
+            data_manager.decrement("economy", f"gold_{user_id}", TOWN_CREATION_COST)
+            data_manager.set("towny", f"town_{user_id}", name)
+            data_manager.set("towny", f"town_balance_{name}", 0)
+            data_manager.set("towny", f"town_members_{name}", [user_id])
+            data_manager.set("towny", f"town_chunks_{name}", 1)
+            data_manager.set("towny", f"town_created_{name}", discord.utils.utcnow().isoformat())
+            
+            new_balance = data_manager.get("economy", f"gold_{user_id}", 0)
+            
+            embed = discord.Embed(
+                title="✅ Town Created!",
+                description=f"**{name}** has been founded!\n\nYou are now the mayor!",
+                color=COLOR_GOLD,
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="💰 Cost", value=f"{TOWN_CREATION_COST} gold", inline=True)
+            embed.add_field(name="💰 Remaining Gold", value=f"{new_balance} gold", inline=True)
+            embed.add_field(name="🗺️ Starting Chunks", value="1", inline=True)
+            
+            await interaction.response.send_message(embed=embed)
+            
+            # Announce in announcements channel
+            announcements = discord.utils.get(interaction.guild.text_channels, name="announcements")
+            if announcements:
+                announce_embed = discord.Embed(
+                    title="🏰 New Town Founded!",
+                    description=f"**{name}** has been founded by {interaction.user.mention}!\n\nWelcome to the nation!",
+                    color=COLOR_GOLD,
+                    timestamp=discord.utils.utcnow()
+                )
+                await announcements.send(embed=announce_embed)
+        
+        elif action == "join":
+            if not name:
+                await interaction.response.send_message(
+                    "❌ Please specify a town name!\n"
+                    "Usage: `/town join <name>`",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if already in a town
+            if data_manager.get("towny", f"town_{user_id}"):
+                await interaction.response.send_message(
+                    "❌ You're already in a town! Use `/town leave` first.",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if town exists
+            town_members = data_manager.get("towny", f"town_members_{name}")
+            if not town_members:
+                await interaction.response.send_message(
+                    f"❌ Town **{name}** doesn't exist!",
+                    ephemeral=True
+                )
+                return
+            
+            # Join town
+            town_members.append(user_id)
+            data_manager.set("towny", f"town_{user_id}", name)
+            data_manager.set("towny", f"town_members_{name}", town_members)
+            
+            embed = discord.Embed(
+                title="✅ Joined Town!",
+                description=f"You joined **{name}**!",
+                color=COLOR_GOLD,
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="👥 Total Members", value=f"{len(town_members)}", inline=True)
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        elif action == "leave":
+            town = data_manager.get("towny", f"town_{user_id}")
+            
+            if not town:
+                await interaction.response.send_message(
+                    "❌ You're not in a town!",
+                    ephemeral=True
+                )
+                return
+            
+            # Remove from town
+            town_members = data_manager.get("towny", f"town_members_{town}", [])
+            if user_id in town_members:
+                town_members.remove(user_id)
+                data_manager.set("towny", f"town_members_{town}", town_members)
+            
+            data_manager.delete("towny", f"town_{user_id}")
+            
+            await interaction.response.send_message(
+                f"✅ You left **{town}**.",
+                ephemeral=True
+            )
+    
+    @discord.app_commands.command(name="nation", description="Manage your nation")
+    @discord.app_commands.describe(action="Action to perform: info, create, join, leave")
+    @discord.app_commands.describe(name="Nation name (for create/join)")
+    async def nation(self, interaction: discord.Interaction, action: str, name: str = None):
+        """Manage nation"""
+        user_id = interaction.user.id
+        
+        if action == "info":
+            # Show nation info
+            nation = data_manager.get("towny", f"nation_{user_id}")
+            
+            if not nation:
+                await interaction.response.send_message(
+                    "❌ You're not in a nation!\n"
+                    f"Use `/nation create <name>` to create one (costs {NATION_CREATION_COST} gold)",
+                    ephemeral=True
+                )
+                return
+            
+            nation_balance = data_manager.get("towny", f"nation_balance_{nation}", 0)
+            nation_towns = data_manager.get("towny", f"nation_towns_{nation}", [])
+            
+            embed = discord.Embed(
+                title=f"🌍 {nation}",
+                description=f"Your nation on DiplomaticaMC",
+                color=COLOR_BLUE,
+                timestamp=discord.utils.utcnow()
+            )
+            
+            embed.add_field(name="💰 Treasury", value=f"{nation_balance} gold", inline=True)
+            embed.add_field(name="🏰 Towns", value=f"{len(nation_towns)}", inline=True)
+            
+            if nation_towns:
+                town_list = "\n".join(nation_towns[:10])
+                if len(nation_towns) > 10:
+                    town_list += f"\n... and {len(nation_towns) - 10} more"
+                embed.add_field(name="🏰 Nation Towns", value=town_list, inline=False)
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        elif action == "create":
+            if not name:
+                await interaction.response.send_message(
+                    "❌ Please specify a nation name!\n"
+                    "Usage: `/nation create <name>`",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if already in a nation
+            if data_manager.get("towny", f"nation_{user_id}"):
+                await interaction.response.send_message(
+                    "❌ You're already in a nation!",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if user has a town
+            town = data_manager.get("towny", f"town_{user_id}")
+            if not town:
+                await interaction.response.send_message(
+                    "❌ You must be in a town to create a nation!\n"
+                    "Use `/town create <name>` first.",
+                    ephemeral=True
+                )
+                return
+            
+            # Check gold
+            gold = data_manager.get("economy", f"gold_{user_id}", 0)
+            if gold < NATION_CREATION_COST:
+                await interaction.response.send_message(
+                    f"❌ You need **{NATION_CREATION_COST}** gold to create a nation!\n"
+                    f"You have **{gold}** gold.",
+                    ephemeral=True
+                )
+                return
+            
+            # Create nation
+            data_manager.decrement("economy", f"gold_{user_id}", NATION_CREATION_COST)
+            data_manager.set("towny", f"nation_{user_id}", name)
+            data_manager.set("towny", f"nation_balance_{name}", 0)
+            data_manager.set("towny", f"nation_towns_{name}", [town])
+            data_manager.set("towny", f"nation_created_{name}", discord.utils.utcnow().isoformat())
+            
+            new_balance = data_manager.get("economy", f"gold_{user_id}", 0)
+            
+            embed = discord.Embed(
+                title="✅ Nation Created!",
+                description=f"**{name}** has been founded!\n\nYou are now the nation leader!",
+                color=COLOR_BLUE,
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="💰 Cost", value=f"{NATION_CREATION_COST} gold", inline=True)
+            embed.add_field(name="💰 Remaining Gold", value=f"{new_balance} gold", inline=True)
+            embed.add_field(name="🏰 Starting Town", value=town, inline=True)
+            
+            await interaction.response.send_message(embed=embed)
+            
+            # Announce
+            announcements = discord.utils.get(interaction.guild.text_channels, name="announcements")
+            if announcements:
+                announce_embed = discord.Embed(
+                    title="🌍 New Nation Founded!",
+                    description=f"**{name}** has been founded by {interaction.user.mention}!\n\nA new power rises!",
+                    color=COLOR_BLUE,
+                    timestamp=discord.utils.utcnow()
+                )
+                await announcements.send(embed=announce_embed)
+        
+        elif action == "join":
+            if not name:
+                await interaction.response.send_message(
+                    "❌ Please specify a nation name!",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if already in a nation
+            if data_manager.get("towny", f"nation_{user_id}"):
+                await interaction.response.send_message(
+                    "❌ You're already in a nation!",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if user has a town
+            town = data_manager.get("towny", f"town_{user_id}")
+            if not town:
+                await interaction.response.send_message(
+                    "❌ You must be in a town to join a nation!",
+                    ephemeral=True
+                )
+                return
+            
+            # Check if nation exists
+            nation_towns = data_manager.get("towny", f"nation_towns_{name}")
+            if not nation_towns:
+                await interaction.response.send_message(
+                    f"❌ Nation **{name}** doesn't exist!",
+                    ephemeral=True
+                )
+                return
+            
+            # Join nation
+            nation_towns.append(town)
+            data_manager.set("towny", f"nation_{user_id}", name)
+            data_manager.set("towny", f"nation_towns_{name}", nation_towns)
+            
+            await interaction.response.send_message(
+                f"✅ Your town **{town}** joined **{name}**!",
+                ephemeral=True
+            )
+        
+        elif action == "leave":
+            nation = data_manager.get("towny", f"nation_{user_id}")
+            
+            if not nation:
+                await interaction.response.send_message(
+                    "❌ You're not in a nation!",
+                    ephemeral=True
+                )
+                return
+            
+            # Remove town from nation
+            town = data_manager.get("towny", f"town_{user_id}")
+            nation_towns = data_manager.get("towny", f"nation_towns_{nation}", [])
+            if town in nation_towns:
+                nation_towns.remove(town)
+                data_manager.set("towny", f"nation_towns_{nation}", nation_towns)
+            
+            data_manager.delete("towny", f"nation_{user_id}")
+            
+            await interaction.response.send_message(
+                f"✅ Your town left **{nation}**.",
+                ephemeral=True
+            )
+    
+    @discord.app_commands.command(name="map", description="View the live map")
+    async def map(self, interaction: discord.Interaction):
+        """Show live map link"""
+        embed = discord.Embed(
+            title="🗺️ DiplomaticaMC Live Map",
+            description=(
+                "Explore the custom Earth map in real-time!\n\n"
+                "**Features:**\n"
+                "• Real-time player tracking\n"
+                "• Town and nation borders\n"
+                "• Capital markers\n"
+                "• Siege zones\n"
+                "• Chunk borders\n"
+                "• Mobile responsive\n\n"
+                "**[Click here to open the map](https://map.diplomaticamc.com/)**"
+            ),
+            color=COLOR_BLUE,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_image(url="https://diplomaticamc.com/img/map-overview.jpg")
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @discord.app_commands.command(name="market", description="View the live market")
+    async def market(self, interaction: discord.Interaction):
+        """Show live market link"""
+        embed = discord.Embed(
+            title="📊 DiplomaticaMC Live Market",
+            description=(
+                "Monitor the global economy in real-time!\n\n"
+                "**Features:**\n"
+                "• Live price tracking\n"
+                "• Trade volume analytics\n"
+                "• Stock levels\n"
+                "• Price trends\n"
+                "• Supply and demand\n\n"
+                "**[Click here to open the market](https://market.diplomaticamc.com/)**"
+            ),
+            color=COLOR_GOLD,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_image(url="https://diplomaticamc.com/img/market-overview.jpg")
+        
+        await interaction.response.send_message(embed=embed)
+
+class SiegeWarCog(commands.Cog):
+    """SiegeWar integration for DiplomaticaMC"""
+    
+    def __init__(self, bot: NariñoBot):
+        self.bot = bot
+    
+    @discord.app_commands.command(name="siege", description="Manage sieges")
+    @discord.app_commands.describe(action="Action: status, attack, defend")
+    async def siege(self, interaction: discord.Interaction, action: str):
+        """Manage sieges"""
+        if action == "status":
+            # Show active sieges
+            sieges = data_manager.get("siegewar", "active_sieges", [])
+            
+            embed = discord.Embed(
+                title="⚔️ Active Sieges",
+                description="Current siege battles on DiplomaticaMC",
+                color=COLOR_RED,
+                timestamp=discord.utils.utcnow()
+            )
+            
+            if not sieges:
+                embed.description = "No active sieges at the moment.\n\n**SiegeWar Info:**\n• Weekend-only warfare\n• Non-destructive battles\n• Zero upkeep\n• Zero plundering"
+            else:
+                for siege in sieges:
+                    embed.add_field(
+                        name=f"⚔️ {siege['attacker']} → {siege['defender']}",
+                        value=(
+                            f"**Status:** {siege['status']}\n"
+                            f"**Started:** <t:{int(siege['timestamp'])}:R>\n"
+                            f"**Battle Points:** {siege.get('points', 0)}"
+                        ),
+                        inline=False
+                    )
+            
+            embed.set_footer(text="SiegeWar: Opt-in, non-destructive warfare")
+            
+            await interaction.response.send_message(embed=embed)
+        
+        elif action == "attack":
+            await interaction.response.send_message(
+                "⚔️ **SiegeWar Attack**\n\n"
+                "To attack a town, use the in-game command:\n"
+                "```\n"
+                "/sw attack <town_name>\n"
+                "```\n\n"
+                "**Requirements:**\n"
+                "• Must be at war with the nation\n"
+                "• Weekend-only (Saturday-Sunday)\n"
+                "• Your town must be adjacent to the target\n\n"
+                "**SiegeWar Features:**\n"
+                "• Non-destructive (no griefing)\n"
+                "• Zero upkeep costs\n"
+                "• Zero plundering\n"
+                "• Strategic weekend battles",
+                ephemeral=True
+            )
+        
+        elif action == "defend":
+            await interaction.response.send_message(
+                "🛡️ **SiegeWar Defense**\n\n"
+                "To defend your town, use the in-game command:\n"
+                "```\n"
+                "/sw defend\n"
+                "```\n\n"
+                "**Defense Tips:**\n"
+                "• Gather your town members\n"
+                "• Stock up on gear and potions\n"
+                "• Coordinate with allies\n"
+                "• Use the terrain to your advantage\n\n"
+                "**Remember:** SiegeWar is non-destructive, so your buildings are safe!",
+                ephemeral=True
+            )
+    
+    @discord.app_commands.command(name="war-status", description="View current war status")
+    async def war_status(self, interaction: discord.Interaction):
+        """View war status"""
+        wars = data_manager.get("diplomacy", "wars", [])
+        active_wars = [w for w in wars if w.get("status") == "active"]
+        
+        embed = discord.Embed(
+            title="⚔️ Current Wars",
+            description="Active conflicts on DiplomaticaMC",
+            color=COLOR_RED,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        if not active_wars:
+            embed.description = "🕊️ **Peace!**\n\nNo active wars at the moment.\n\nAll nations are at peace."
+        else:
+            for war in active_wars:
+                embed.add_field(
+                    name=f"⚔️ {war['attacker']} vs {war['defender']}",
+                    value=(
+                        f"**Reason:** {war.get('reason', 'Unknown')}\n"
+                        f"**Declared:** <t:{int(war.get('timestamp', 0))}:R>\n"
+                        f"**Status:** {war.get('status', 'active')}"
+                    ),
+                    inline=False
+                )
+        
+        await interaction.response.send_message(embed=embed)
+
+class InactivityCog(commands.Cog):
+    """Inactivity tracking for DiplomaticaMC"""
+    
+    def __init__(self, bot: NariñoBot):
+        self.bot = bot
+        self.inactivity_check.start()
+    
+    def cog_unload(self):
+        self.inactivity_check.cancel()
+    
+    @tasks.loop(hours=24)
+    async def inactivity_check(self):
+        """Check for inactive players daily"""
+        now = discord.utils.utcnow().timestamp()
+        
+        # Get all players
+        players = data_manager.get_all_keys("activity")
+        
+        for player_key in players:
+            if player_key.startswith("last_seen_"):
+                user_id = int(player_key.replace("last_seen_", ""))
+                last_seen = data_manager.get("activity", player_key, now)
+                
+                days_inactive = (now - last_seen) / 86400
+                
+                # Warn at 50 days
+                if days_inactive >= INACTIVITY_WARNING_DAYS and days_inactive < INACTIVITY_WARNING_DAYS + 1:
+                    warned = data_manager.get("activity", f"warned_{user_id}", False)
+                    if not warned:
+                        try:
+                            user = await self.bot.fetch_user(user_id)
+                            remaining = int(INACTIVITY_DELETION_DAYS - days_inactive)
+                            
+                            await user.send(
+                                f"⚠️ **Inactivity Warning**\n\n"
+                                f"You haven't been active on DiplomaticaMC for **{int(days_inactive)}** days.\n\n"
+                                f"**Your Towny data will be deleted in {remaining} days** if you don't log in.\n\n"
+                                f"To keep your town/nation, please log in to the server!\n\n"
+                                f"IP: `diplomaticamc.com`"
+                            )
+                            
+                            data_manager.set("activity", f"warned_{user_id}", True)
+                        except:
+                            pass
+                
+                # Delete at 60 days
+                elif days_inactive >= INACTIVITY_DELETION_DAYS:
+                    # Delete towny data
+                    town = data_manager.get("towny", f"town_{user_id}")
+                    if town:
+                        # Remove from town
+                        town_members = data_manager.get("towny", f"town_members_{town}", [])
+                        if user_id in town_members:
+                            town_members.remove(user_id)
+                            data_manager.set("towny", f"town_members_{town}", town_members)
+                        
+                        # Delete town if empty
+                        if not town_members:
+                            data_manager.delete("towny", f"town_{town}")
+                            data_manager.delete("towny", f"town_balance_{town}")
+                            data_manager.delete("towny", f"town_chunks_{town}")
+                    
+                    # Remove from nation
+                    nation = data_manager.get("towny", f"nation_{user_id}")
+                    if nation:
+                        data_manager.delete("towny", f"nation_{user_id}")
+                    
+                    # Clear activity data
+                    data_manager.delete("activity", f"last_seen_{user_id}")
+                    data_manager.delete("activity", f"warned_{user_id}")
+    
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Track activity on message"""
+        if message.author.bot:
+            return
+        
+        user_id = message.author.id
+        now = discord.utils.utcnow().timestamp()
+        
+        data_manager.set("activity", f"last_seen_{user_id}", now)
+        data_manager.delete("activity", f"warned_{user_id}")  # Reset warning
+    
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        """Track activity on voice"""
+        if before.channel is None and after.channel is not None:
+            # Joined voice
+            user_id = member.id
+            now = discord.utils.utcnow().timestamp()
+            
+            data_manager.set("activity", f"last_seen_{user_id}", now)
+            data_manager.delete("activity", f"warned_{user_id}")
 
 class FunCog(commands.Cog):
     """Fun features"""

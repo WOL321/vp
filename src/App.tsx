@@ -181,13 +181,13 @@ function Hero() {
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[0.9] mb-6">
             <span className="block">Nariño Bot</span>
             <span className="block mt-2 bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-              The Ultimate Colombia Nation Bot
+              DiplomaticaMC Integration
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
-            A comprehensive Discord bot with <span className="text-white font-semibold">18+ features</span> including vote party tracking, 
-            role management, economy system, diplomacy, events, and much more. Built for the Colombia nation on DiplomaticaMC.
+            The ultimate Discord bot for <span className="text-white font-semibold">DiplomaticaMC</span> with deep Towny integration, 
+            Gold Standard economy, SiegeWar support, live map & market links, and 25,000+ player community features.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-16">
@@ -211,9 +211,9 @@ function Hero() {
           {/* Feature count stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {[
-              { label: 'Total Features', value: '18+', icon: Sparkles, color: 'from-yellow-500/20 to-amber-500/20' },
-              { label: 'Commands', value: '50+', icon: Terminal, color: 'from-blue-500/20 to-cyan-500/20' },
-              { label: 'Languages', value: '2', icon: Globe, color: 'from-green-500/20 to-emerald-500/20' },
+              { label: 'Server Players', value: '25K+', icon: Users, color: 'from-yellow-500/20 to-amber-500/20' },
+              { label: 'Discord Members', value: '1.3K', icon: MessageSquare, color: 'from-blue-500/20 to-cyan-500/20' },
+              { label: 'Earth Scale', value: '1:450', icon: Globe, color: 'from-green-500/20 to-emerald-500/20' },
               { label: 'Vote Sites', value: '3', icon: Vote, color: 'from-purple-500/20 to-violet-500/20' },
             ].map((stat, i) => (
               <motion.div
@@ -838,15 +838,16 @@ function EconomySection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium mb-4">
             <Coins size={12} />
-            Advanced Economy & Activity
+            Gold Standard Economy
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-            Complete Economic System
+            DiplomaticaMC Gold Economy
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Virtual economy with stock market, businesses, real estate, banking, gambling, and comprehensive activity tracking.
+            Real gold-based economy matching DiplomaticaMC's Gold Standard. Town creation (64 gold), nation creation (1024 gold), 
+            chunk claiming (16 gold), and full Towny integration.
           </p>
         </motion.div>
 
@@ -858,40 +859,40 @@ function EconomySection() {
             viewport={{ once: true }}
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center mb-4">
               <Coins size={24} className="text-white" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-3">Advanced Economy</h3>
+            <h3 className="text-lg font-bold text-white mb-3">Gold Standard Economy</h3>
             <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
+              <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-transparent border border-yellow-500/20">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-white font-semibold text-sm">💰 Balance</span>
-                  <span className="text-green-400 font-bold">1,247 Pesos</span>
+                  <span className="text-white font-semibold text-sm">🪙 Gold Balance</span>
+                  <span className="text-yellow-400 font-bold">1,247 gold</span>
                 </div>
-                <div className="text-xs text-gray-400">+50 today • +320 this week</div>
+                <div className="text-xs text-gray-400">19 stacks + 31 ingots</div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2 rounded-lg bg-white/[0.02] text-center">
-                  <div className="text-xs text-gray-400 mb-1">📈 Stock Market</div>
-                  <div className="text-sm font-bold text-emerald-400">+12.5%</div>
+                  <div className="text-xs text-gray-400 mb-1">🏰 Town Creation</div>
+                  <div className="text-sm font-bold text-yellow-400">64 gold</div>
                 </div>
                 <div className="p-2 rounded-lg bg-white/[0.02] text-center">
-                  <div className="text-xs text-gray-400 mb-1">🏢 Businesses</div>
-                  <div className="text-sm font-bold text-white">3 owned</div>
+                  <div className="text-xs text-gray-400 mb-1">🌍 Nation Creation</div>
+                  <div className="text-sm font-bold text-yellow-400">1024 gold</div>
                 </div>
                 <div className="p-2 rounded-lg bg-white/[0.02] text-center">
-                  <div className="text-xs text-gray-400 mb-1">🏠 Real Estate</div>
-                  <div className="text-sm font-bold text-white">2 properties</div>
+                  <div className="text-xs text-gray-400 mb-1">🗺️ Chunk Claim</div>
+                  <div className="text-sm font-bold text-yellow-400">16 gold</div>
                 </div>
                 <div className="p-2 rounded-lg bg-white/[0.02] text-center">
-                  <div className="text-xs text-gray-400 mb-1">🏦 Bank Interest</div>
-                  <div className="text-sm font-bold text-emerald-400">5% APY</div>
+                  <div className="text-xs text-gray-400 mb-1">📅 Daily Reward</div>
+                  <div className="text-sm font-bold text-emerald-400">16 gold</div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 px-3 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-medium transition-colors">🎰 Casino</button>
-                <button className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-medium transition-colors">🏪 Shop</button>
-                <button className="flex-1 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-medium transition-colors">🎁 Auction</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 text-xs font-medium transition-colors">🏰 Towny</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-medium transition-colors">🗺️ Map</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-medium transition-colors">📊 Market</button>
               </div>
             </div>
           </motion.div>
@@ -959,6 +960,252 @@ function EconomySection() {
             </div>
           </motion.div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── DiplomaticaMC Integration ───────────────────────────────────────────────
+
+function DiplomaticaMCSection() {
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-transparent via-blue-500/[0.02] to-transparent">
+      <div className="max-w-7xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium mb-4">
+            <Globe size={12} />
+            DiplomaticaMC Integration
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+            Deep Server Integration
+          </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Built specifically for DiplomaticaMC with Towny, SiegeWar, Gold Standard economy, and live map/market integration.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Towny Integration */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                <Map size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Towny Integration</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20">
+                <div className="text-white font-semibold text-sm mb-2">🏰 Town Management</div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex justify-between">
+                    <span>Create Town</span>
+                    <span className="text-yellow-400 font-semibold">64 gold</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Claim Chunk</span>
+                    <span className="text-yellow-400 font-semibold">16 gold</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Town Treasury</span>
+                    <span className="text-white">Shared gold</span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                <div className="text-white font-semibold text-sm mb-2">🌍 Nation System</div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex justify-between">
+                    <span>Create Nation</span>
+                    <span className="text-yellow-400 font-semibold">1024 gold</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Nation Treasury</span>
+                    <span className="text-white">Shared gold</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Member Towns</span>
+                    <span className="text-white">Unlimited</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button className="flex-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-medium transition-colors">/town</button>
+                <button className="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-medium transition-colors">/nation</button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* SiegeWar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+                <Sword size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">SiegeWar System</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                <div className="text-white font-semibold text-sm mb-2">⚔️ Weekend Warfare</div>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>✓ Opt-in battles only</div>
+                  <div>✓ Non-destructive (no griefing)</div>
+                  <div>✓ Zero upkeep costs</div>
+                  <div>✓ Zero plundering</div>
+                  <div>✓ Saturday-Sunday only</div>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-white/[0.02]">
+                <div className="text-white font-semibold text-sm mb-2">🛡️ Active Sieges</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-red-400">🏰 Bogotá</span>
+                    <span className="text-gray-400">vs Lima</span>
+                    <span className="text-yellow-400">Day 2/3</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-blue-400">🏰 Cartagena</span>
+                    <span className="text-gray-400">vs Quito</span>
+                    <span className="text-emerald-400">Defending</span>
+                  </div>
+                </div>
+              </div>
+              <button className="w-full px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-medium transition-colors">/siege status</button>
+            </div>
+          </motion.div>
+
+          {/* Live Map */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                <Map size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Live Interactive Map</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="rounded-lg overflow-hidden border border-white/[0.06]">
+                <img 
+                  src="https://diplomaticamc.com/img/map-overview.jpg" 
+                  alt="Live Map" 
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+              <div className="text-xs text-gray-400 space-y-1">
+                <div>✓ Real-time player tracking</div>
+                <div>✓ Town & nation borders</div>
+                <div>✓ Capital markers</div>
+                <div>✓ Siege zones</div>
+                <div>✓ Mobile responsive</div>
+              </div>
+              <a 
+                href="https://map.diplomaticamc.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full px-3 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs font-medium transition-colors text-center"
+              >
+                Open Live Map →
+              </a>
+            </div>
+          </motion.div>
+
+          {/* Live Market */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+                <TrendingUp size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Live Market</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="rounded-lg overflow-hidden border border-white/[0.06]">
+                <img 
+                  src="https://diplomaticamc.com/img/market-overview.jpg" 
+                  alt="Live Market" 
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+              <div className="text-xs text-gray-400 space-y-1">
+                <div>✓ Real-time price tracking</div>
+                <div>✓ Trade volume analytics</div>
+                <div>✓ Stock levels</div>
+                <div>✓ Price trends</div>
+                <div>✓ Supply & demand</div>
+              </div>
+              <a 
+                href="https://market.diplomaticamc.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full px-3 py-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 text-xs font-medium transition-colors text-center"
+              >
+                Open Live Market →
+              </a>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Server Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-blue-500/10 to-red-500/10 border border-white/[0.06]"
+        >
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-white mb-2">🇨🇴 DiplomaticaMC Server Info</h3>
+            <p className="text-gray-400 text-sm">The ultimate Earth-scale geopolitics sandbox</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-3xl font-black text-white">25K+</div>
+              <div className="text-xs text-gray-400">Total Players</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white">12K+</div>
+              <div className="text-xs text-gray-400">Unique Users</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white">1:450</div>
+              <div className="text-xs text-gray-400">Earth Scale</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white">1.21+</div>
+              <div className="text-xs text-gray-400">MC Version</div>
+            </div>
+          </div>
+          <div className="mt-6 text-center">
+            <div className="inline-block px-6 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1]">
+              <div className="text-xs text-gray-400 mb-1">Server IP</div>
+              <div className="text-lg font-mono font-bold text-white">diplomaticamc.com</div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -1158,6 +1405,7 @@ export default function App() {
       <VotePartySection />
       <NationFeatures />
       <EconomySection />
+      <DiplomaticaMCSection />
       <EventsSection />
       <Footer />
     </div>

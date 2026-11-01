@@ -20,14 +20,25 @@ PING_THRESHOLD = 30
 PING_DELETE_SECONDS = 300
 MAX_VOTES_PER_CYCLE = 3
 
-# ─── Economy Settings ─────────────────────────────────────────────────────────
+# ─── Economy Settings (DiplomaticaMC Gold Standard) ───────────────────────────
 
-STARTING_BALANCE = 100
-VOTE_REWARD = 50
-MESSAGE_XP = 1
-VOICE_XP_PER_MINUTE = 5
-CURRENCY_NAME = "Pesos"
-CURRENCY_EMOJI = "💰"
+# DiplomaticaMC uses GOLD as currency (ingots and blocks)
+# This tracks gold holdings, not virtual currency
+STARTING_GOLD = 0  # Players start with 0 gold
+VOTE_REWARD_GOLD = 64  # 64 gold ingots (1 stack) for voting
+DAILY_REWARD_GOLD = 16  # 16 gold ingots daily
+WORK_REWARD_GOLD = 8  # 8 gold ingots for work
+CURRENCY_NAME = "Gold"
+CURRENCY_EMOJI = "🪙"
+
+# Towny Costs (DiplomaticaMC specific)
+TOWN_CREATION_COST = 64  # 64 gold ingots to create a town
+NATION_CREATION_COST = 1024  # 1024 gold ingots to create a nation
+TOWN_CLAIM_COST = 16  # 16 gold per chunk claim
+
+# Inactivity Settings
+INACTIVITY_WARNING_DAYS = 50  # Warn at 50 days
+INACTIVITY_DELETION_DAYS = 60  # Delete Towny data at 60 days
 
 # ─── Activity Settings ────────────────────────────────────────────────────────
 
